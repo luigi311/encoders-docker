@@ -4,6 +4,7 @@ FROM python:3
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
+        time \
         cmake \
         gcc \
         g++ \
@@ -12,7 +13,7 @@ RUN apt-get update && \
         parallel \
         ffmpeg \
         ninja-build \
-        doxygen
+        doxygen 
 RUN pip install --no-cache-dir meson
 
 # Install libvmaf
