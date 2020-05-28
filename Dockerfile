@@ -11,7 +11,6 @@ RUN apt-get update && \
         make \
         nasm \
         parallel \
-        ffmpeg \
         ninja-build \
         doxygen 
 RUN pip install --no-cache-dir meson
@@ -22,6 +21,11 @@ RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf && \
     meson build --buildtype release && \
     ninja -vC build && \
     ninja -vC build install
+
+# Install FFMPEG
+RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
+    tar xf ffmpeg-git-amd64-static.tar.xz && \
+    mv ffmpeg-*/* /usr/local/bin/
 
 # Install aomenc
 RUN git clone https://aomedia.googlesource.com/aom /tmp/aomenc && \
