@@ -5,12 +5,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Upgrade
 RUN apt-get update && \
-    apt-get install -y software-properties-common && \
+    apt-get install -y --no-install-recommends software-properties-common && \
     apt-add-repository multiverse && \
-    apt-get -y upgrade
-
-# Install requirements
-RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
         time \
@@ -60,13 +56,16 @@ RUN apt-get update && \
         doxygen \
         libsm6 \
         libxext6 \
-        libxrender-dev 
-RUN pip3 install --no-cache-dir meson
+        libxrender-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir meson==0.54.2
 
 # Install libvmaf
 RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf
-RUN cd /tmp/vmaf/libvmaf && \
-    meson build --buildtype release && \
+WORKDIR /tmp/vmaf/libvmaf
+RUN meson build --buildtype release && \
     ninja -vC build || ninja -vC build && \
     ninja -vC build install
 
@@ -77,8 +76,8 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar
 
 # Install aomenc
 RUN git clone https://aomedia.googlesource.com/aom /tmp/aomenc && \
-    mkdir -p /tmp/aom_build && \
-    cd /tmp/aom_build && \
-    cmake -DENABLE_SHARED=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /tmp/aomenc && \
-    make -j$(nproc) && \
+    mkdir -p /tmp/aom_build
+WORKDIR /tmp/aom_build 
+RUN cmake -DENABLE_SHARED=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /tmp/aomenc && \
+    make -j"$(nproc)" && \
     make install
