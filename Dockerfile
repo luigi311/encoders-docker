@@ -1,4 +1,13 @@
-FROM python:3
+FROM ubuntu:18.04
+
+# Set to noninteractive to fix issue with tzdate
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Upgrade
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    apt-add-repository multiverse && \
+    apt-get -y upgrade
 
 # Install requirements
 RUN apt-get update && \
@@ -10,16 +19,55 @@ RUN apt-get update && \
         g++ \
         make \
         nasm \
+        yasm \
         parallel \
         ninja-build \
-        doxygen 
-RUN pip install --no-cache-dir meson
+        doxygen \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        python3-docutils \
+        curl \
+        build-essential \ 
+        checkinstall \
+        bison \
+        flex \
+        gettext \
+        mercurial \
+        subversion \
+        gyp \
+        automake \ 
+        pkg-config \ 
+        libtool \
+        libtool-bin \
+        gcc-multilib \
+        g++-multilib \
+        libgmp-dev \
+        libmpfr-dev \
+        libmpc-dev \
+        libgcrypt-dev \
+        gperf \
+        ragel \
+        texinfo \
+        autopoint \
+        re2c \
+        asciidoc  \
+        rst2pdf \
+        docbook2x \
+        unzip \
+        p7zip-full \
+        doxygen \
+        libsm6 \
+        libxext6 \
+        libxrender-dev 
+RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
-RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf && \
-    cd /tmp/vmaf/libvmaf && \
+RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf
+RUN cd /tmp/vmaf/libvmaf && \
     meson build --buildtype release && \
-    ninja -vC build && \
+    ninja -vC build || ninja -vC build && \
     ninja -vC build install
 
 # Install FFMPEG
@@ -32,5 +80,5 @@ RUN git clone https://aomedia.googlesource.com/aom /tmp/aomenc && \
     mkdir -p /tmp/aom_build && \
     cd /tmp/aom_build && \
     cmake -DENABLE_SHARED=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /tmp/aomenc && \
-    make -j$(NPROC) && \
+    make -j$(nproc) && \
     make install
