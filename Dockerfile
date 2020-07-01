@@ -60,7 +60,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir meson==0.54.2
+RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
 RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf
@@ -77,7 +77,18 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar
 # Install aomenc
 RUN git clone https://aomedia.googlesource.com/aom /tmp/aomenc && \
     mkdir -p /tmp/aom_build
-WORKDIR /tmp/aom_build 
+WORKDIR /tmp/aom_build
 RUN cmake -DENABLE_SHARED=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /tmp/aomenc && \
     make -j"$(nproc)" && \
     make install
+
+# Install svt-av1
+RUN git clone https://github.com/OpenVisualCloud/SVT-AV1.git /tmp/svt-av1 && \
+    mkdir -p /tmp/svt-av1/Build/linux/Release
+WORKDIR /tmp/svt-av1/Build/linux/Release
+RUN cmake -S /tmp/svt-av1/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
+    cmake --build . --target install
+
+# Test Encoders
+RUN aomenc --help && \
+    SvtAv1EncApp --help
