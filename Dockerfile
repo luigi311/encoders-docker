@@ -71,38 +71,38 @@ RUN apt-get update && \
 
 RUN pip3 install --no-cache-dir meson
 
-## Install libvmaf
-#RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf
-#WORKDIR /tmp/vmaf/libvmaf
-#RUN meson build --buildtype release && \
-#    ninja -vC build || ninja -vC build && \
-#    ninja -vC build install
-#
-## Install FFMPEG
-#RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
-#    tar xf ffmpeg-git-amd64-static.tar.xz && \
-#    mv ffmpeg-*/* /usr/local/bin/
-#
-## Install aomenc
-#RUN git clone https://aomedia.googlesource.com/aom /tmp/aomenc && \
-#    mkdir -p /tmp/aom_build
-#WORKDIR /tmp/aom_build
-#RUN cmake -DENABLE_SHARED=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /tmp/aomenc && \
-#    make -j"$(nproc)" && \
-#    make install
-#
-## Install svt-av1
-#RUN git clone https://github.com/OpenVisualCloud/SVT-AV1.git /tmp/svt-av1 && \
-#    mkdir -p /tmp/svt-av1/Build/linux/Release
-#WORKDIR /tmp/svt-av1/Build/linux/Release
-#RUN cmake -S /tmp/svt-av1/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
-#    cmake --build . --target install
+# Install libvmaf
+RUN git clone https://github.com/Netflix/vmaf.git /tmp/vmaf
+WORKDIR /tmp/vmaf/libvmaf
+RUN meson build --buildtype release && \
+    ninja -vC build || ninja -vC build && \
+    ninja -vC build install
+
+# Install FFMPEG
+RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
+    tar xf ffmpeg-git-amd64-static.tar.xz && \
+    mv ffmpeg-*/* /usr/local/bin/
+
+# Install aomenc
+RUN git clone https://aomedia.googlesource.com/aom /tmp/aomenc && \
+    mkdir -p /tmp/aom_build
+WORKDIR /tmp/aom_build
+RUN cmake -DENABLE_SHARED=off -DENABLE_NASM=on -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /tmp/aomenc && \
+    make -j"$(nproc)" && \
+    make install
+
+# Install svt-av1
+RUN git clone https://github.com/OpenVisualCloud/SVT-AV1.git /tmp/svt-av1 && \
+    mkdir -p /tmp/svt-av1/Build/linux/Release
+WORKDIR /tmp/svt-av1/Build/linux/Release
+RUN cmake -S /tmp/svt-av1/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
+    cmake --build . --target install
 
 # Install rav1e
 COPY --from=builder /tmp/rav1e/target/release /tmp/rav1e
 RUN ln tmp/rav1e/rav1e /usr/local/bin/
 
 # Test Encoders
-RUN rav1e --help 
-#    aomenc --help && \
-#    SvtAv1EncApp --help
+RUN aomenc --help && \
+    SvtAv1EncApp --help && \
+    av1e --help 
