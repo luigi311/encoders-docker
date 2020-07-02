@@ -1,0 +1,19 @@
+FROM ubuntu:18.04
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        build-essential \
+        cmake \
+        yasm && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install svt-av1
+RUN git -c http.sslVerify=false clone https://github.com/OpenVisualCloud/SVT-AV1.git /SVT-AV1
+WORKDIR /SVT-AV1/Build/linux/Release
+RUN cmake -S /SVT-AV1/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
+    cmake --build . --target install
+
+CMD [ "/SVT-AV1/Bin/Release/SvtAv1EncApp" ]
