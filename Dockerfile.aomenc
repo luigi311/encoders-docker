@@ -1,0 +1,40 @@
+FROM ubuntu:18.04
+
+# Set to noninteractive to fix issue with tzdate
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install Dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        python3-docutils \
+        build-essential \
+        ninja-build \
+        cmake \
+        yasm && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir meson
+
+# Install libvmaf
+RUN git clone https://github.com/Netflix/vmaf.git /vmaf
+WORKDIR /vmaf/libvmaf
+RUN meson build --buildtype release && \
+    ninja -vC build || ninja -vC build && \
+    ninja -vC build install
+
+# Install aomenc
+RUN mkdir -p aomenc && \
+    git clone https://aomedia.googlesource.com/aom /aom && \
+    mkdir -p /aom_build
+WORKDIR /aom_build
+RUN cmake -DENABLE_SHARED=off -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /aom && \
+    make -j"$(nproc)" && \
+    make install
+
+CMD [ "/aom_build/aomenc" ]
