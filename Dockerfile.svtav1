@@ -1,9 +1,15 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
         build-essential \
         cmake \
         yasm && \
@@ -11,9 +17,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install svt-av1
-RUN git -c http.sslVerify=false clone https://github.com/OpenVisualCloud/SVT-AV1.git /SVT-AV1
+RUN git clone https://github.com/OpenVisualCloud/SVT-AV1.git /SVT-AV1
 WORKDIR /SVT-AV1/Build/linux/Release
 RUN cmake -S /SVT-AV1/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
     cmake --build . --target install
 
-CMD [ "/SVT-AV1/Bin/Release/SvtAv1EncApp" ]
+RUN /usr/local/bin/SvtAv1EncApp --help
+
+ENTRYPOINT [ "/usr/local/bin/SvtAv1EncApp" ]
