@@ -3,36 +3,173 @@ default:
   services:
     - docker:dind
   before_script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - echo "${CI_REGISTRY_PASSWORD}" | docker login -u "${CI_REGISTRY_USER}" "${CI_REGISTRY}" --password-stdin
 
-docker-build-master-aomenc:
+# Main
+# Build
+builder-aomenc:
   stage: build
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE:aomenc" . -f Dockerfile.aomenc
-    - docker push "$CI_REGISTRY_IMAGE:aomenc"
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:aomenc" -f Dockerfile.aomenc .
+    - docker push "${CI_REGISTRY_IMAGE}:aomenc"
   only:
     - master
 
-docker-build-master-svt-av1:
+builder-svt-av1:
   stage: build
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE:svt-av1" . -f Dockerfile.svtav1
-    - docker push "$CI_REGISTRY_IMAGE:svt-av1"
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:svt-av1" -f Dockerfile.svtav1 .
+    - docker push "${CI_REGISTRY_IMAGE}:svt-av1"
   only:
     - master
 
-docker-build-master-rav1e:
+builder-rav1e:
   stage: build
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE:rav1e" . -f Dockerfile.rav1e  
-    - docker push "$CI_REGISTRY_IMAGE:rav1e"
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:rav1e" -f Dockerfile.rav1e .
+    - docker push "${CI_REGISTRY_IMAGE}:rav1e"
   only:
     - master
 
-docker-build-master:
+# Testing
+tester-aomenc:
+  stage: test
+  needs: ["builder-aomenc"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:aomenc"
+    - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:aomenc" --rt --cpu-used=9 --ivf -o /dev/stdout /dev/stdin < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - git clone https://github.com/videolan/dav1d.git
+    - mkdir dav1d/build && cd dav1d/build
+    - meson .. && ninja
+    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+  only:
+    - master
+
+tester-svt-av1:
+  stage: test
+  needs: ["builder-svt-av1"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:svt-av1"
+    - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:svt-av1" --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - git clone https://github.com/videolan/dav1d.git
+    - mkdir dav1d/build && cd dav1d/build
+    - meson .. && ninja
+    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+  only:
+    - master
+
+#TODO
+tester-rav1e:
+  stage: test
+  needs: ["builder-rav1e"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:rav1e"
+    - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done
+    - tar xf video.tar.gz
+    - git clone https://github.com/videolan/dav1d.git
+    - mkdir dav1d/build && cd dav1d/build
+    - meson .. && ninja
+  only:
+    - master
+
+# Deploy
+deploy:
   stage: deploy
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE" .  
-    - docker push "$CI_REGISTRY_IMAGE"
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}" .  
+    - docker push "${CI_REGISTRY_IMAGE}"
   only:
+    - master
+
+# Branch
+# Main
+builder-aomenc-branch:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:aomenc-${CI_COMMIT_BRANCH}" -f Dockerfile.aomenc .
+    - docker push "${CI_REGISTRY_IMAGE}:aomenc-${CI_COMMIT_BRANCH}"
+  except:
+    - master
+
+builder-svt-av1-branch:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:svt-av1-${CI_COMMIT_BRANCH}" -f Dockerfile.svtav1 .
+    - docker push "${CI_REGISTRY_IMAGE}:svt-av1-${CI_COMMIT_BRANCH}"
+  except:
+    - master
+
+builder-rav1e-branch:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:rav1e-${CI_COMMIT_BRANCH}" -f Dockerfile.rav1e . 
+    - docker push "${CI_REGISTRY_IMAGE}:rav1e-${CI_COMMIT_BRANCH}"
+  except:
+    - master
+
+# Testing
+tester-aomenc-branch:
+  stage: test
+  needs: ["builder-aomenc-branch"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:aomenc-${CI_COMMIT_BRANCH}"
+    - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:aomenc-${CI_COMMIT_BRANCH}" --rt --cpu-used=9 --ivf -o /dev/stdout /dev/stdin < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - git clone https://github.com/videolan/dav1d.git
+    - mkdir dav1d/build && cd dav1d/build
+    - meson .. && ninja
+    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+  except:
+    - master
+
+tester-svt-av1-branch:
+  stage: test
+  needs: ["builder-svt-av1-branch"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:svt-av1-${CI_COMMIT_BRANCH}"
+    - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:svt-av1-${CI_COMMIT_BRANCH}" --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - git clone https://github.com/videolan/dav1d.git
+    - mkdir dav1d/build && cd dav1d/build
+    - meson .. && ninja
+    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+  except:
+    - master
+
+#TODO
+tester-rav1e-branch:
+  stage: test
+  needs: ["builder-rav1e-branch"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:rav1e-${CI_COMMIT_BRANCH}"
+    - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done
+    - tar xf video.tar.gz
+    - git clone https://github.com/videolan/dav1d.git
+    - mkdir dav1d/build && cd dav1d/build
+    - meson .. && ninja
+  except:
+    - master
+
+# Deploy
+deploy-branch:
+  stage: deploy
+  script:
+    - sed -i 's/av1-docker:aomenc/av1-docker:aomenc-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
+    - sed -i 's/av1-docker:svt-av1/av1-docker:svt-av1-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
+    - sed -i 's/av1-docker:rav1e/av1-docker:rav1e-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}" .
+    - docker push "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}"
+  except:
     - master

@@ -10,4 +10,6 @@ RUN git clone https://github.com/xiph/rav1e.git
 WORKDIR /rav1e
 RUN cargo build --release
 
-CMD [ "rav1e/target/release/rav1e" ]
+RUN /rav1e/target/release/rav1e --help
+
+ENTRYPOINT [ "/rav1e/target/release/rav1e" ]

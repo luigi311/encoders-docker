@@ -1,8 +1,12 @@
 FROM ubuntu:20.04
 
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu/
+
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        pkg-config \
         git \
         curl \
         python3 \
@@ -11,7 +15,9 @@ RUN apt-get update && \
         python3-wheel \
         python3-docutils \
         build-essential \
-        ninja-build && \
+        nasm \
+        ninja-build \
+        libgl1-mesa-glx && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,17 +32,18 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar
 RUN git clone https://github.com/Netflix/vmaf.git /vmaf
 WORKDIR /vmaf/libvmaf
 RUN meson build --buildtype release && \
-    ninja -vC build || ninja -vC build && \
+    ninja -vC build && \
+    ninja -vC build test && \
     ninja -vC build install
 
 # Install aomenc
-COPY --from=registry.gitlab.com/luigi311/av1-docker:aomenc /aom_build/aomenc /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/av1-docker:aomenc /usr/local/bin/aomenc /usr/local/bin
 
 # Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/av1-docker:svt-av1 /SVT-AV1/Bin/Release/SvtAv1EncApp /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/av1-docker:svt-av1 /usr/local/bin/SvtAv1EncApp /usr/local/bin
 
 # Install rav1e
-COPY --from=registry.gitlab.com/luigi311/av1-docker:rav1e rav1e/target/release rav1e/
+COPY --from=registry.gitlab.com/luigi311/av1-docker:rav1e /rav1e/target/release rav1e/
 RUN ln rav1e/rav1e /usr/local/bin/
 
 # Test Encoders
