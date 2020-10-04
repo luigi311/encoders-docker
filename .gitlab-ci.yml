@@ -31,6 +31,14 @@ builder-rav1e:
   only:
     - master
 
+builder-x265:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:x265" -f Dockerfile.x265 .
+    - docker push "${CI_REGISTRY_IMAGE}:x265"
+  only:
+    - master
+
 # Testing
 tester-aomenc:
   stage: test
@@ -79,6 +87,19 @@ tester-rav1e:
   only:
     - master
 
+tester-x265:
+  stage: test
+  needs: ["builder-x265"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:x265"
+    - apk add --no-progress --no-cache curl ffmpeg
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:x265" --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.x265
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.x265
+  only:
+    - master
+
 # Deploy
 deploy:
   stage: deploy
@@ -111,6 +132,14 @@ builder-rav1e-branch:
   script:
     - docker build --pull -t "${CI_REGISTRY_IMAGE}:rav1e-${CI_COMMIT_BRANCH}" -f Dockerfile.rav1e . 
     - docker push "${CI_REGISTRY_IMAGE}:rav1e-${CI_COMMIT_BRANCH}"
+  except:
+    - master
+
+builder-x265-branch:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}" -f Dockerfile.x265 .
+    - docker push "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}"
   except:
     - master
 
@@ -162,6 +191,19 @@ tester-rav1e-branch:
   except:
     - master
 
+tester-x265-branch:
+  stage: test
+  needs: ["builder-x265-branch"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}"
+    - apk add --no-progress --no-cache curl ffmpeg
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}" --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.x265
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.x265
+  except:
+    - master
+
 # Deploy
 deploy-branch:
   stage: deploy
@@ -169,6 +211,7 @@ deploy-branch:
     - sed -i 's/av1-docker:aomenc/av1-docker:aomenc-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:svt-av1/av1-docker:svt-av1-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:rav1e/av1-docker:rav1e-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
+    - sed -i 's/av1-docker:x265/av1-docker:x265-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - docker build --pull -t "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}" .
     - docker push "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}"
   except:
