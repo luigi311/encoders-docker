@@ -46,7 +46,5 @@ COPY --from=registry.gitlab.com/luigi311/av1-docker:svt-av1 /usr/local/bin/SvtAv
 COPY --from=registry.gitlab.com/luigi311/av1-docker:rav1e /rav1e/target/release rav1e/
 RUN ln rav1e/rav1e /usr/local/bin/
 
-# Test Encoders
-RUN aomenc --help && \
-    SvtAv1EncApp --help && \
-    rav1e --help 
+# Install x265
+COPY --from=registry.gitlab.com/luigi311/av1-docker:x265 /usr/local/bin/x265 /usr/local/bin
