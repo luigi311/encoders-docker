@@ -1,3 +1,4 @@
+
 FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
@@ -14,18 +15,17 @@ RUN apt-get update && \
         python3-wheel \
         build-essential \
         cmake \
-        libx265-dev \
-        libnuma-dev \
-        mercurial \
-        nasm && \
+        libvpx-dev \
+        yasm && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install x265
-RUN git clone https://github.com/videolan/x265.git /x265
-WORKDIR /x265/build/linux
-RUN cmake -G "Unix Makefiles" -DENABLE_SHARED=off ../../source && \
+# Install vpxenc
+RUN git clone https://chromium.googlesource.com/webm/libvpx.git /vpxenc && \
+    mkdir /build
+WORKDIR /build
+RUN ../vpxenc/configure --enable-vp9-highbitdepth --as=yasm && \
     make -j$(nproc) && \
     make install
 
-ENTRYPOINT [ "/usr/local/bin/x265" ]
+ENTRYPOINT [ "/usr/local/bin/vpxenc" ]
