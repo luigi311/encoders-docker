@@ -39,6 +39,14 @@ builder-x265:
   only:
     - master
 
+builder-vpxenc:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:vpxenc" -f Dockerfile.vpxenc .
+    - docker push "${CI_REGISTRY_IMAGE}:vpxenc"
+  only:
+    - master
+
 # Testing
 tester-aomenc:
   stage: test
@@ -100,6 +108,19 @@ tester-x265:
   only:
     - master
 
+tester-vpxenc:
+  stage: test
+  needs: ["builder-vpxenc"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:vpxenc"
+    - apk add --no-progress --no-cache curl ffmpeg
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:vpxenc" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.vp9
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.vp9
+  only:
+    - master
+
 # Deploy
 deploy:
   stage: deploy
@@ -140,6 +161,14 @@ builder-x265-branch:
   script:
     - docker build --pull -t "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}" -f Dockerfile.x265 .
     - docker push "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}"
+  except:
+    - master
+
+builder-vpxenc-branch:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:vpxenc-${CI_COMMIT_BRANCH}" -f Dockerfile.vpxenc .
+    - docker push "${CI_REGISTRY_IMAGE}:vpxenc-${CI_COMMIT_BRANCH}"
   except:
     - master
 
@@ -204,6 +233,19 @@ tester-x265-branch:
   except:
     - master
 
+tester-vpxenc-branch:
+  stage: test
+  needs: ["builder-vpxenc-branch"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:vpxenc-${CI_COMMIT_BRANCH}"
+    - apk add --no-progress --no-cache curl ffmpeg
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:vpxenc-${CI_COMMIT_BRANCH}" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.vp9
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.vp9
+  except:
+    - master
+
 # Deploy
 deploy-branch:
   stage: deploy
@@ -212,6 +254,7 @@ deploy-branch:
     - sed -i 's/av1-docker:svt-av1/av1-docker:svt-av1-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:rav1e/av1-docker:rav1e-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:x265/av1-docker:x265-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
+    - sed -i 's/av1-docker:vpxenc/av1-docker:vpxenc-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - docker build --pull -t "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}" .
     - docker push "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}"
   except:
