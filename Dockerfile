@@ -17,6 +17,7 @@ RUN apt-get update && \
         build-essential \
         nasm \
         ninja-build \
+        libnuma1 \
         libgl1-mesa-glx && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -48,3 +49,6 @@ RUN ln rav1e/rav1e /usr/local/bin/
 
 # Install x265
 COPY --from=registry.gitlab.com/luigi311/av1-docker:x265 /usr/local/bin/x265 /usr/local/bin
+
+# Reset workdir to root
+WORKDIR /
