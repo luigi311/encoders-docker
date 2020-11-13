@@ -25,8 +25,8 @@ RUN apt-get update && \
 RUN pip3 install --no-cache-dir meson
 
 # Install FFMPEG
-RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
-    tar xf ffmpeg-git-amd64-static.tar.xz && \
+RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+    tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
 # Install libvmaf
