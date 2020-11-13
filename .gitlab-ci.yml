@@ -39,6 +39,14 @@ builder-x265:
   only:
     - master
 
+builder-x264:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:x264" -f Dockerfile.x264 .
+    - docker push "${CI_REGISTRY_IMAGE}:x264"
+  only:
+    - master
+
 builder-vpxenc:
   stage: build
   script:
@@ -56,11 +64,11 @@ tester-aomenc:
     - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:aomenc" --rt --cpu-used=9 --ivf -o /dev/stdout /dev/stdin < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - docker run -i "${CI_REGISTRY_IMAGE}:aomenc" --rt --cpu-used=9 --ivf -o /dev/stdout /dev/stdin < akiyo_cif.y4m > /akiyo_cif.ivf
     - git clone https://github.com/videolan/dav1d.git
     - mkdir dav1d/build && cd dav1d/build
     - meson .. && ninja
-    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+    - tools/dav1d -i /akiyo_cif.ivf -o test.yuv
   only:
     - master
 
@@ -72,11 +80,11 @@ tester-svt-av1:
     - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:svt-av1" --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - docker run -i "${CI_REGISTRY_IMAGE}:svt-av1" --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > /akiyo_cif.ivf
     - git clone https://github.com/videolan/dav1d.git
     - mkdir dav1d/build && cd dav1d/build
     - meson .. && ninja
-    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+    - tools/dav1d -i /akiyo_cif.ivf -o test.yuv
   only:
     - master
 
@@ -103,8 +111,21 @@ tester-x265:
     - apk add --no-progress --no-cache curl ffmpeg
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:x265" --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.x265
-    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.x265
+    - docker run -i "${CI_REGISTRY_IMAGE}:x265" --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif.x265
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.x265
+  only:
+    - master
+
+tester-x264:
+  stage: test
+  needs: ["builder-x264"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:x264"
+    - apk add --no-progress --no-cache curl ffmpeg
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:x264" --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif.mkv
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.mkv
   only:
     - master
 
@@ -116,8 +137,8 @@ tester-vpxenc:
     - apk add --no-progress --no-cache curl ffmpeg
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:vpxenc" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.vp9
-    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.vp9
+    - docker run -i "${CI_REGISTRY_IMAGE}:vpxenc" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif.vp9
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.vp9
   only:
     - master
 
@@ -164,6 +185,14 @@ builder-x265-branch:
   except:
     - master
 
+builder-x264-branch:
+  stage: build
+  script:
+    - docker build --pull -t "${CI_REGISTRY_IMAGE}:x264-${CI_COMMIT_BRANCH}" -f Dockerfile.x264 .
+    - docker push "${CI_REGISTRY_IMAGE}:x264-${CI_COMMIT_BRANCH}"
+  except:
+    - master
+
 builder-vpxenc-branch:
   stage: build
   script:
@@ -181,11 +210,11 @@ tester-aomenc-branch:
     - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:aomenc-${CI_COMMIT_BRANCH}" --rt --cpu-used=9 --ivf -o /dev/stdout /dev/stdin < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - docker run -i "${CI_REGISTRY_IMAGE}:aomenc-${CI_COMMIT_BRANCH}" --rt --cpu-used=9 --ivf -o /dev/stdout /dev/stdin < akiyo_cif.y4m > /akiyo_cif.ivf
     - git clone https://github.com/videolan/dav1d.git
     - mkdir dav1d/build && cd dav1d/build
     - meson .. && ninja
-    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+    - tools/dav1d -i /akiyo_cif.ivf -o test.yuv
   except:
     - master
 
@@ -197,11 +226,11 @@ tester-svt-av1-branch:
     - apk add --no-progress --no-cache curl git meson gcc g++ nasm samurai
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:svt-av1-${CI_COMMIT_BRANCH}" --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.ivf
+    - docker run -i "${CI_REGISTRY_IMAGE}:svt-av1-${CI_COMMIT_BRANCH}" --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > /akiyo_cif.ivf
     - git clone https://github.com/videolan/dav1d.git
     - mkdir dav1d/build && cd dav1d/build
     - meson .. && ninja
-    - tools/dav1d -i /akiyo_cif_av1.ivf -o test.yuv
+    - tools/dav1d -i /akiyo_cif.ivf -o test.yuv
   except:
     - master
 
@@ -228,8 +257,21 @@ tester-x265-branch:
     - apk add --no-progress --no-cache curl ffmpeg
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}" --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.x265
-    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.x265
+    - docker run -i "${CI_REGISTRY_IMAGE}:x265-${CI_COMMIT_BRANCH}" --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif.x265
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.x265
+  except:
+    - master
+
+tester-x264-branch:
+  stage: test
+  needs: ["builder-x264-branch"]
+  script:
+    - docker pull "${CI_REGISTRY_IMAGE}:x264-${CI_COMMIT_BRANCH}"
+    - apk add --no-progress --no-cache curl ffmpeg
+    - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+    - tar xf video.tar.gz
+    - docker run -i "${CI_REGISTRY_IMAGE}:x264-${CI_COMMIT_BRANCH}" --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif.mkv
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.mkv
   except:
     - master
 
@@ -241,8 +283,8 @@ tester-vpxenc-branch:
     - apk add --no-progress --no-cache curl ffmpeg
     - for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     - tar xf video.tar.gz
-    - docker run -i "${CI_REGISTRY_IMAGE}:vpxenc-${CI_COMMIT_BRANCH}" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif_av1.vp9
-    - ffprobe -hide_banner -loglevel error -i /akiyo_cif_av1.vp9
+    - docker run -i "${CI_REGISTRY_IMAGE}:vpxenc-${CI_COMMIT_BRANCH}" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > /akiyo_cif.vp9
+    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.vp9
   except:
     - master
 
@@ -254,6 +296,7 @@ deploy-branch:
     - sed -i 's/av1-docker:svt-av1/av1-docker:svt-av1-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:rav1e/av1-docker:rav1e-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:x265/av1-docker:x265-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
+    - sed -i 's/av1-docker:x264/av1-docker:x264-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - sed -i 's/av1-docker:vpxenc/av1-docker:vpxenc-'"${CI_COMMIT_BRANCH}"'/g' Dockerfile
     - docker build --pull -t "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}" .
     - docker push "${CI_REGISTRY_IMAGE}:latest-${CI_COMMIT_BRANCH}"
