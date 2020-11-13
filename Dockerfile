@@ -50,6 +50,9 @@ RUN ln rav1e/rav1e /usr/local/bin/
 # Install x265
 COPY --from=registry.gitlab.com/luigi311/av1-docker:x265 /usr/local/bin/x265 /usr/local/bin
 
+# Install x264
+COPY --from=registry.gitlab.com/luigi311/av1-docker:x264 /usr/local/bin/x264 /usr/local/bin
+
 # Install vpxenc
 COPY --from=registry.gitlab.com/luigi311/av1-docker:vpxenc /usr/local/bin/vpxenc /usr/local/bin
 

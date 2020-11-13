@@ -14,17 +14,16 @@ RUN apt-get update && \
         python3-wheel \
         build-essential \
         cmake \
-        libvpx-dev \
-        yasm && \
+        libx264-dev \
+        nasm && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install vpxenc
-RUN git clone https://chromium.googlesource.com/webm/libvpx.git /vpxenc && \
-    mkdir /build
-WORKDIR /build
-RUN ../vpxenc/configure --enable-vp9-highbitdepth --as=yasm && \
+# Install x264
+RUN git clone https://code.videolan.org/videolan/x264.git /x264
+WORKDIR /x264
+RUN ./configure --enable-static --enable-pic && \
     make -j$(nproc) && \
     make install
 
-ENTRYPOINT [ "/usr/local/bin/vpxenc" ]
+ENTRYPOINT [ "/usr/local/bin/x264" ]
