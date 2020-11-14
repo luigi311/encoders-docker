@@ -38,23 +38,23 @@ RUN meson build --buildtype release && \
     ninja -vC build install
 
 # Install aomenc
-COPY --from=registry.gitlab.com/luigi311/av1-docker:aomenc /usr/local/bin/aomenc /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/local/bin/aomenc /usr/local/bin
 
 # Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/av1-docker:svt-av1 /usr/local/bin/SvtAv1EncApp /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /usr/local/bin/SvtAv1EncApp /usr/local/bin
 
 # Install rav1e
-COPY --from=registry.gitlab.com/luigi311/av1-docker:rav1e /rav1e/target/release rav1e/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e/target/release rav1e/
 RUN ln rav1e/rav1e /usr/local/bin/
 
 # Install x265
-COPY --from=registry.gitlab.com/luigi311/av1-docker:x265 /usr/local/bin/x265 /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /usr/local/bin/x265 /usr/local/bin
 
 # Install x264
-COPY --from=registry.gitlab.com/luigi311/av1-docker:x264 /usr/local/bin/x264 /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /usr/local/bin/x264 /usr/local/bin
 
 # Install vpxenc
-COPY --from=registry.gitlab.com/luigi311/av1-docker:vpxenc /usr/local/bin/vpxenc /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /usr/local/bin/vpxenc /usr/local/bin
 
 # Reset workdir to root
 WORKDIR /
