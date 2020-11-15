@@ -50,6 +50,9 @@ RUN ln rav1e/rav1e /usr/local/bin/
 # Install x265
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /usr/local/bin/x265 /usr/local/bin
 
+# Install svt-hevc
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /usr/local/bin/SvtHevcEncApp /usr/local/bin
+
 # Install x264
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /usr/local/bin/x264 /usr/local/bin
 

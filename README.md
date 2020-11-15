@@ -1,6 +1,6 @@
 # encoders-docker
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/0e63ec6ab000468f8c304e691dcded99)](https://www.codacy.com/manual/luigi311/encoders-docker/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=Luigi311/encoders-docker&amp;utm_campaign=Badge_Grade)  
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/0e63ec6ab000468f8c304e691dcded99)](https://www.codacy.com/manual/luigi311/encoders-docker/dashboard?utm_source=gitlab.com&utm_medium=referral&utm_content=Luigi311/encoders-docker&utm_campaign=Badge_Grade)  
 Docker images for all video encoders for CI/CD or video encoding
 
 ## Currently Supported
@@ -9,6 +9,7 @@ Docker images for all video encoders for CI/CD or video encoding
 -   svt-av1
 -   rav1e
 -   x265
+-   svt-hevc
 -   x264
 -   vpxenc
 
@@ -32,16 +33,24 @@ docker run -i registry.gitlab.com/luigi311/encoders-docker:latest SvtAv1EncApp -
 
 #### rav1e
 
-Does not support stdin to feed it the video source so it can be used as a base image for CI/CD or by mounting the folder with the video files into the image
+Does not support stdin to feed it the video source so it has to be used as a base image for CI/CD or by mounting the folder with the video files into the image
 
 ```bash
-docker run -i -v /home/luis/videos:/videos registry.gitlab.com/luigi311/encoders-docker:latest rav1e /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf
+docker run -v /home/luis/videos:/videos registry.gitlab.com/luigi311/encoders-docker:latest rav1e /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf
 ```
 
 #### x265
 
 ```bash
 docker run -i registry.gitlab.com/luigi311/encoders-docker:latest x265 --y4m --preset 0 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > akiyo_cif.h265
+```
+
+#### svt-hevc
+
+Does not support stdin to feed it the video source so it has to be used as a base image for CI/CD or by mounting the folder with the video files into the image
+
+```bash
+docker run -v /home/luis/videos:/videos registry.gitlab.com/luigi311/encoders-docker:latest SvtHevcEncApp -i /videos/akiyo_cif.y4m -b akiyo_cif.bin
 ```
 
 #### x264

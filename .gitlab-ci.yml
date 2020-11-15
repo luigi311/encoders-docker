@@ -54,17 +54,19 @@ before_script:
 
     apk add --no-progress --no-cache $DEPENDENCIES
 
+    mkdir -p videos
+
     for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
-    tar xf video.tar.gz --directory /
+    tar xf video.tar.gz --directory videos
 
     CONTAINER="${CI_REGISTRY_IMAGE}/${DOCKER_CONTAINER_NAME}:${LATEST}"
     docker pull "$CONTAINER"
 
     if [ "$DOCKER_CONTAINER_NAME" == "aomenc" ] || [ "$DOCKER_CONTAINER_NAME" == "svt-av1" ] || [ "$DOCKER_CONTAINER_NAME" == "rav1e" ]; then
-      git clone https://github.com/videolan/dav1d.git /dav1d
-      mkdir -p /dav1d/build && cd /dav1d/build
+      git clone https://github.com/videolan/dav1d.git
+      mkdir -p dav1d/build && cd dav1d/build
       meson .. && ninja
-      cd /
+      cd "$CI_PROJECT_DIR"
     fi
 
 .deployer:
@@ -80,6 +82,7 @@ before_script:
       sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile
       sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile
       sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile
+      sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile
       sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile
       sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile
     fi
@@ -113,6 +116,10 @@ x265:
   stage: build
   extends: .builder
 
+svt-hevc:
+  stage: build
+  extends: .builder
+
 x264:
   stage: build
   extends: .builder
@@ -131,8 +138,8 @@ tester-aomenc:
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
   script:
     - *tester
-    - docker run -i "$CONTAINER" --rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout < /akiyo_cif.y4m > /akiyo_cif.ivf
-    - /dav1d/build/tools/dav1d -i /akiyo_cif.ivf -o test.yuv
+    - docker run -i "$CONTAINER" --rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
+    - dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
 
 tester-svt-av1:
   stage: test
@@ -143,10 +150,9 @@ tester-svt-av1:
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
   script:
     - *tester
-    - docker run -i "$CONTAINER" --preset 8 -i /dev/stdin -b /dev/stdout < /akiyo_cif.y4m > /akiyo_cif.ivf
-    - /dav1d/build/tools/dav1d -i /akiyo_cif.ivf -o test.yuv
+    - docker run -i "$CONTAINER" --preset 8 -i /dev/stdin -b /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
+    - dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
 
-#TODO rav1e does not accept stdin video
 tester-rav1e:
   stage: test
   needs: ["rav1e"]
@@ -156,6 +162,8 @@ tester-rav1e:
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
   script:
     - *tester
+    - docker run -v $(pwd)/videos:/videos "$CONTAINER" --speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf
+    - dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
 
 tester-x265:
   stage: test
@@ -165,8 +173,19 @@ tester-x265:
     DOCKER_CONTAINER_NAME: "x265"
   script:
     - *tester
-    - docker run -i "$CONTAINER" --y4m --preset 0 /dev/stdin -o /dev/stdout < /akiyo_cif.y4m > /akiyo_cif.h265
-    - ffmpeg -hide_banner -loglevel error -i /akiyo_cif.h265 -f null -
+    - docker run -i "$CONTAINER" --y4m --preset 0 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.h265
+    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.h265 -f null -
+
+tester-svt-hevc:
+  stage: test
+  needs: ["svt-hevc"]
+  variables:
+    <<: *global-variables
+    DOCKER_CONTAINER_NAME: "svt-hevc"
+  script:
+    - *tester
+    - docker run -v $(pwd)/videos:/videos "$CONTAINER" -i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin
+    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.bin -f null -
 
 tester-x264:
   stage: test
@@ -176,8 +195,8 @@ tester-x264:
     DOCKER_CONTAINER_NAME: "x264"
   script:
     - *tester
-    - docker run -i "$CONTAINER" --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout < /akiyo_cif.y4m > /akiyo_cif.mkv
-    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.mkv
+    - docker run -i "$CONTAINER" --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.mkv
+    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.mkv -f null -
 
 tester-vpxenc:
   stage: test
@@ -187,8 +206,8 @@ tester-vpxenc:
     DOCKER_CONTAINER_NAME: "vpxenc"
   script:
     - *tester
-    - docker run -i "$CONTAINER" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < /akiyo_cif.y4m > /akiyo_cif.ivf
-    - ffprobe -hide_banner -loglevel error -i /akiyo_cif.ivf
+    - docker run -i "$CONTAINER" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
+    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.ivf -f null -
 
 # Deploy
 deploy:
