@@ -64,3 +64,11 @@ docker run -i registry.gitlab.com/luigi311/encoders-docker:latest x264 --demuxer
 ```bash
 docker run -i registry.gitlab.com/luigi311/encoders-docker:latest vpxenc --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < akiyo_cif.y4m > akiyo_cif.ivf
 ```
+
+#### svt-vp9
+
+Does not support stdin to feed it the video source so it has to be used as a base image for CI/CD or by mounting the folder with the video files into the image. Only supports YUV so it requires manually setting the width, height and fps.
+
+```bash
+docker run -v /home/luis/videos:/videos registry.gitlab.com/luigi311/encoders-docker:latest SvtVp9EncApp -w 352 -h 288 -fps-num 24000 -fps-denom 1001 -i /videos/akiyo_cif.yuv -b akiyo_cif.bin
+```

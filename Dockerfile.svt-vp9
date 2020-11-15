@@ -1,0 +1,27 @@
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        build-essential \
+        cmake \
+        yasm && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install svt-av1
+RUN git clone https://github.com/OpenVisualCloud/SVT-VP9.git /SVT-VP9
+WORKDIR /SVT-VP9/Build/linux/Release
+RUN cmake -S /SVT-VP9/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
+    cmake --build . --target install
+
+RUN /usr/local/bin/SvtVp9EncApp --help
+
+ENTRYPOINT [ "/usr/local/bin/SvtVp9EncApp" ]

@@ -59,5 +59,8 @@ COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /usr/local/
 # Install vpxenc
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /usr/local/bin/vpxenc /usr/local/bin
 
+# Install svt-vp9
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-vp9:latest /usr/local/bin/SvtVp9EncApp /usr/local/bin
+
 # Reset workdir to root
 WORKDIR /

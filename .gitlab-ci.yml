@@ -85,6 +85,7 @@ before_script:
       sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile
       sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile
       sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile
+      sed -i 's/svt-vp9:latest/svt-vp9:'"${LATEST}"'/g' Dockerfile
     fi
 
     CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
@@ -125,6 +126,10 @@ x264:
   extends: .builder
 
 vpxenc:
+  stage: build
+  extends: .builder
+
+svt-vp9:
   stage: build
   extends: .builder
 
@@ -208,6 +213,18 @@ tester-vpxenc:
     - *tester
     - docker run -i "$CONTAINER" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
     - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.ivf -f null -
+
+tester-svt-vp9:
+  stage: test
+  needs: ["svt-vp9"]
+  variables:
+    <<: *global-variables
+    DOCKER_CONTAINER_NAME: "svt-vp9"
+  script:
+    - *tester
+    - ffmpeg -i videos/akiyo_cif.y4m videos/akiyo_cif.yuv
+    - docker run -v $(pwd)/videos:/videos "$CONTAINER" -w 352 -h 288 -fps-num 24000 -fps-denom 1001 -i /videos/akiyo_cif.yuv -b /videos/akiyo_cif.bin
+    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.bin -f null -
 
 # Deploy
 deploy:
