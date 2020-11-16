@@ -20,13 +20,13 @@ Can be used in CI/CD for software involving encoders along with using them to en
 ### Examples
 
 #### aomenc
-
+Stdin/Stdout (Linux/WSL)
 ```bash
 docker run -i registry.gitlab.com/luigi311/encoders-docker:latest aomenc --rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout < akiyo_cif.y4m > akiyo_cif.ivf
 ```
 
 #### svt-av1
-
+Stdin/Stdout (Linux/WSL)
 ```bash
 docker run -i registry.gitlab.com/luigi311/encoders-docker:latest SvtAv1EncApp --preset 8 -i /dev/stdin -b /dev/stdout < akiyo_cif.y4m > akiyo_cif.ivf
 ```
@@ -50,7 +50,7 @@ docker run -i registry.gitlab.com/luigi311/encoders-docker:latest x265 --y4m --p
 Does not support stdin to feed it the video source so it has to be used as a base image for CI/CD or by mounting the folder with the video files into the image
 
 ```bash
-docker run -v /home/luis/videos:/videos registry.gitlab.com/luigi311/encoders-docker:latest SvtHevcEncApp -i /videos/akiyo_cif.y4m -b akiyo_cif.bin
+docker run -v /home/luis/videos:/videos registry.gitlab.com/luigi311/encoders-docker:latest SvtHevcEncApp -i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin
 ```
 
 #### x264
