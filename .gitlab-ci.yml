@@ -11,18 +11,23 @@ variables: &global-variables
   DOCKER_TLS_CERTDIR: /certs
 
 before_script:
-  - printf '%s\n' "$CI_REGISTRY_PASSWORD" | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
-
-.builder:
-  script: &builder |
+  - |
+    printf '%s\n' "$CI_REGISTRY_PASSWORD" | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
     if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
       TIMESTAMP="$(date +%Y%m%d)"
       LATEST="latest"
     else
-      TIMESTAMP="${CI_COMMIT_BRANCH}-$(date +%Y%m%d)"
-      LATEST="${CI_COMMIT_BRANCH}-latest"
+      if [ "$CI_COMMIT_TAG" != "" ]; then
+        TIMESTAMP="${CI_COMMIT_TAG}-$(date +%Y%m%d)"
+        LATEST="${CI_COMMIT_TAG}-latest"
+      else
+        TIMESTAMP="${CI_COMMIT_BRANCH}-$(date +%Y%m%d)"
+        LATEST="${CI_COMMIT_BRANCH}-latest"
+      fi
     fi
 
+.builder:
+  script: &builder |
     # image name, space removed and lowercased
     DOCKER_CONTAINER_NAME=$(printf %s $CI_JOB_NAME | tr '[:upper:]' '[:lower:]')
     # "Release" name, aka tagged name by date
@@ -40,12 +45,6 @@ before_script:
 
 .tester:
   script: &tester |
-    if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
-      LATEST="latest"
-    else
-      LATEST="${CI_COMMIT_BRANCH}-latest"
-    fi
-
     if [ -z ${DEPENDENCIES+x} ]; then 
       DEPENDENCIES="curl ffmpeg"
     else 
@@ -71,12 +70,7 @@ before_script:
 
 .deployer:
   script: &deployer |
-    if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
-      TIMESTAMP="$(date +%Y%m%d)"
-      LATEST="latest"
-    else
-      TIMESTAMP="${CI_COMMIT_BRANCH}-$(date +%Y%m%d)"
-      LATEST="${CI_COMMIT_BRANCH}-latest"
+    if [ "$CI_COMMIT_BRANCH" != "$CI_DEFAULT_BRANCH" ]; then
       # Build final image using branch images instead of main latest
       sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile
       sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile
