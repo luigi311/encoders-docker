@@ -1,15 +1,18 @@
 FROM rust:latest
 
+# Install Dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         nasm && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install rav1e
 RUN git clone https://github.com/xiph/rav1e.git
 WORKDIR /rav1e
-RUN cargo build --release
+RUN cargo build --release && \
+    cp /rav1e/target/release/rav1e /usr/local/bin
 
-RUN /rav1e/target/release/rav1e --help
+RUN  /usr/local/bin/rav1e --help
 
-ENTRYPOINT [ "/rav1e/target/release/rav1e" ]
+ENTRYPOINT [ "/usr/local/bin/rav1e" ]

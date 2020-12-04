@@ -26,4 +26,6 @@ RUN ./configure --enable-static --enable-pic && \
     make -j$(nproc) && \
     make install
 
+RUN /usr/local/bin/x264 --help
+
 ENTRYPOINT [ "/usr/local/bin/x264" ]

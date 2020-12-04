@@ -27,4 +27,6 @@ RUN ../vpxenc/configure --enable-vp9-highbitdepth --as=yasm && \
     make -j$(nproc) && \
     make install
 
+RUN /usr/local/bin/vpxenc --help
+
 ENTRYPOINT [ "/usr/local/bin/vpxenc" ]
