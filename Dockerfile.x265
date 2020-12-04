@@ -31,4 +31,7 @@ RUN chmod +x multilib.sh && \
     cp 8bit/x265 /usr/local/bin && \
     cp 8bit/libx265.a /usr/local/lib
 
+# x265 reports error on --help
+#RUN /usr/local/bin/x265 --help
+
 ENTRYPOINT [ "/usr/local/bin/x265" ]
