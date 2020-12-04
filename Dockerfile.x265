@@ -2,6 +2,7 @@ FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
 ARG DEBIAN_FRONTEND=noninteractive
+ARG LDFLAGS="-Wl,--no-as-needed"
 
 # Install Dependencies
 RUN apt-get update && \
@@ -24,8 +25,10 @@ RUN apt-get update && \
 # Install x265
 RUN git clone https://github.com/videolan/x265.git /x265
 WORKDIR /x265/build/linux
-RUN cmake -G "Unix Makefiles" -DENABLE_SHARED=OFF -DHIGH_BIT_DEPTH=ON -DMAIN12=ON ../../source && \
-    make -j$(nproc) && \
-    make install
+RUN chmod +x multilib.sh && \
+    sed -i "s/-DLINKED_12BIT=ON/-DLINKED_12BIT=ON -DENABLE_SHARED=OFF/g" multilib.sh && \
+    MAKEFLAGS="-j$(nproc)" ./multilib.sh && \
+    cp 8bit/x265 /usr/local/bin && \
+    cp 8bit/libx265.a /usr/local/lib
 
 ENTRYPOINT [ "/usr/local/bin/x265" ]
