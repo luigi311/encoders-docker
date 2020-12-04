@@ -52,11 +52,11 @@ COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/loca
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /usr/local/bin/SvtAv1EncApp /usr/local/bin
 
 # Install rav1e
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e/target/release rav1e/
-RUN ln rav1e/rav1e /usr/local/bin/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e/target/release/rav1e /usr/local/bin
 
 # Install x265
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /usr/local/bin/x265 /usr/local/bin
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /usr/local/lib/libx265.a /usr/local/lib
 
 # Install svt-hevc
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /usr/local/bin/SvtHevcEncApp /usr/local/bin
