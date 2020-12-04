@@ -24,15 +24,20 @@ before_script:
       LATEST="latest"
     else
       if [ "$CI_COMMIT_TAG" != "" ]; then
+        # Tag Releases
         TIMESTAMP="${CI_COMMIT_TAG}-$(date +%Y%m%d)"
         LATEST="${CI_COMMIT_TAG}-latest"
       else
+        # Branch Releases
         TIMESTAMP="${CI_COMMIT_BRANCH}-$(date +%Y%m%d)"
         LATEST="${CI_COMMIT_BRANCH}-latest"
       fi
     fi
 
 .builder:
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   script: &builder |
     # image name, space removed and lowercased
     DOCKER_CONTAINER_NAME=$(printf %s $CI_JOB_NAME | tr '[:upper:]' '[:lower:]')
@@ -59,33 +64,51 @@ before_script:
 
     apk add --no-progress --no-cache $DEPENDENCIES
 
+    # Download test videos
     mkdir -p videos
-
     for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
     tar xf video.tar.gz --directory videos
 
-    CONTAINER="${CI_REGISTRY_IMAGE}/${DOCKER_CONTAINER_NAME}:${LATEST}"
+    if [ "$CI_JOB_STAGE" == "validation" ]; then
+      # Point to main image on validation stage
+      CONTAINER=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
+    else
+      # Point to individual encoder image test stage
+      CONTAINER="${CI_REGISTRY_IMAGE}/${DOCKER_CONTAINER_NAME}:${LATEST}"
+    fi
 
-    if [ "$DOCKER_CONTAINER_NAME" == "aomenc" ] || [ "$DOCKER_CONTAINER_NAME" == "svt-av1" ] || [ "$DOCKER_CONTAINER_NAME" == "rav1e" ]; then
+    if [ "$DOCKER_CONTAINER_NAME" == "svt-hevc" ] || [ "$DOCKER_CONTAINER_NAME" == "rav1e" ]; then
+      # Volume mounting due to no support for stdin and std out
+      docker run -v $(pwd)/videos:/videos "$CONTAINER" $DOCKER_COMMAND
+    else
+      # Encode via stdin and stdout
+      docker run -i "$CONTAINER" $DOCKER_COMMAND < videos/akiyo_cif.y4m > "$OUTPUT_FILE"
+    fi
+
+    # Compile dav1d for av1 encodes
+    if [ "$DOCKER_CONTAINER_NAME" == "aomenc" ] || [ "$DOCKER_CONTAINER_NAME" == "svt-av1" ] || [ "$DOCKER_CONTAINER_NAME" == "rav1e" ]; then     
       git clone https://github.com/videolan/dav1d.git
       mkdir -p dav1d/build && cd dav1d/build
       meson .. && ninja
       cd "$CI_PROJECT_DIR"
+
+      dav1d/build/tools/dav1d -i "$OUTPUT_FILE" -o videos/test.yuv
+    else
+      ffmpeg -hide_banner -loglevel error -i "$OUTPUT_FILE" -f null -
     fi
 
 .deployer:
   script: &deployer |
-    if [ "$CI_COMMIT_BRANCH" != "$CI_DEFAULT_BRANCH" ]; then
-      # Build final image using branch images instead of main latest
-      sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile
-      sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile
-      sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile
-      sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile
-      sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile
-      sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile
-      sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile
-    fi
+    # Build final image using branch images if on branches or main if on master
+    sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile
 
+    # Tag main image with all containers
     CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
 
     # Actual build step
@@ -131,75 +154,89 @@ vpxenc:
 tester-aomenc:
   stage: test
   needs: ["aomenc"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "aomenc"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
-  script:
-    - *tester
-    - docker run -i "$CONTAINER" --rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
-    - dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
+    DOCKER_COMMAND: "--rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 tester-svt-av1:
   stage: test
   needs: ["svt-av1"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "svt-av1"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
-  script:
-    - *tester
-    - docker run -i "$CONTAINER" --preset 8 -i /dev/stdin -b /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
-    - dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
+    DOCKER_COMMAND: "--preset 8 -i /dev/stdin -b /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 tester-rav1e:
   stage: test
   needs: ["rav1e"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "rav1e"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
-  script:
-    - *tester
-    - docker run -v $(pwd)/videos:/videos "$CONTAINER" --speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf
-    - dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
+    DOCKER_COMMAND: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 tester-x265:
   stage: test
   needs: ["x265"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "x265"
-  script:
-    - *tester
-    - docker run -i "$CONTAINER" --y4m --preset 0 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.h265
-    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.h265 -f null -
+    DOCKER_COMMAND: "--y4m --preset 0 /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.h265"
+  extends: .tester
 
 tester-svt-hevc:
   stage: test
   needs: ["svt-hevc"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "svt-hevc"
-  script:
-    - *tester
-    - docker run -v $(pwd)/videos:/videos "$CONTAINER" -i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin
-    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.bin -f null -
+    DOCKER_COMMAND: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
+    OUTPUT_FILE: "videos/akiyo_cif.bin"
+  extends: .tester
 
 tester-x264:
   stage: test
   needs: ["x264"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "x264"
-  script:
-    - *tester
-    - docker run -i "$CONTAINER" --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.mkv
-    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.mkv -f null -
+    DOCKER_COMMAND: "--demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.mkv"
+  extends: .tester
 
 tester-vpxenc:
   stage: test
   needs: ["vpxenc"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
   variables:
     DOCKER_CONTAINER_NAME: "vpxenc"
-  script:
-    - *tester
-    - docker run -i "$CONTAINER" --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
-    - ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.ivf -f null -
+    DOCKER_COMMAND: "--codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 # Deploy
 deploy:
@@ -212,12 +249,9 @@ validator-aomenc:
   variables:
     DOCKER_CONTAINER_NAME: "aomenc"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -i "$CONTAINER_RELEASE_IMAGE" aomenc --rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
-      dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
+    DOCKER_COMMAND: "aomenc --rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 validator-svt-av1:
   stage: validation
@@ -225,12 +259,9 @@ validator-svt-av1:
   variables:
     DOCKER_CONTAINER_NAME: "svt-av1"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -i "$CONTAINER_RELEASE_IMAGE" SvtAv1EncApp --preset 8 -i /dev/stdin -b /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
-      dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
+    DOCKER_COMMAND: "SvtAv1EncApp --preset 8 -i /dev/stdin -b /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 validator-rav1e:
   stage: validation
@@ -238,57 +269,42 @@ validator-rav1e:
   variables:
     DOCKER_CONTAINER_NAME: "rav1e"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -v $(pwd)/videos:/videos "$CONTAINER_RELEASE_IMAGE" rav1e --speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf
-      dav1d/build/tools/dav1d -i videos/akiyo_cif.ivf -o videos/test.yuv
+    DOCKER_COMMAND: "rav1e --speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
 
 validator-x265:
   stage: validation
   needs: ["deploy"]
   variables:
     DOCKER_CONTAINER_NAME: "x265"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -i "$CONTAINER_RELEASE_IMAGE" x265 --y4m --preset 0 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.h265
-      ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.h265 -f null -
+    DOCKER_COMMAND: "x265 --y4m --preset 0 /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.h265"
+  extends: .tester
 
 validator-svt-hevc:
   stage: validation
   needs: ["deploy"]
   variables:
     DOCKER_CONTAINER_NAME: "svt-hevc"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -v $(pwd)/videos:/videos "$CONTAINER_RELEASE_IMAGE" SvtHevcEncApp -i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin
-      ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.bin -f null -
+    DOCKER_COMMAND: "SvtHevcEncApp -i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
+    OUTPUT_FILE: "videos/akiyo_cif.bin"
+  extends: .tester
 
 validator-x264:
   stage: validation
   needs: ["deploy"]
   variables:
     DOCKER_CONTAINER_NAME: "x264"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -i "$CONTAINER_RELEASE_IMAGE" x264 --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.mkv
-      ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.mkv -f null -
+    DOCKER_COMMAND: "x264 --demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.mkv"
+  extends: .tester
 
 validator-vpxenc:
   stage: validation
   needs: ["deploy"]
   variables:
     DOCKER_CONTAINER_NAME: "vpxenc"
-  script:
-    - *tester
-    - |
-      CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
-      docker run -i "$CONTAINER_RELEASE_IMAGE" vpxenc --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout < videos/akiyo_cif.y4m > videos/akiyo_cif.ivf
-      ffmpeg -hide_banner -loglevel error -i videos/akiyo_cif.ivf -f null -
+    DOCKER_COMMAND: "vpxenc --codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
+  extends: .tester
