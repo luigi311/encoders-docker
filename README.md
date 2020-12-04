@@ -89,6 +89,7 @@ docker run -v //c/Users/luigi311/Videos:/videos registry.gitlab.com/luigi311/enc
 #### svt-hevc
 
 Stdin/Stdout (Linux/WSL)
+
 Does not support stdin to feed it the video source so it has to be used as a base image for CI/CD or by mounting the folder with the video files into the image
 
 Volume Mount (Windows/Linux/WSL)
