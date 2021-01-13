@@ -46,7 +46,7 @@ RUN meson build --buildtype release && \
 RUN git clone https://aomedia.googlesource.com/aom /aom && \
     mkdir -p /aom_build
 WORKDIR /aom_build
-RUN cmake -DBUILD_SHARED_LIBS=0 -DCMAKE_BUILD_TYPE=Release -DCONFIG_TUNE_VMAF=1 /aom && \
+RUN cmake -DBUILD_SHARED_LIBS=0 -DCMAKE_BUILD_TYPE=Release /aom && \
     make -j"$(nproc)" && \
     make install
 
