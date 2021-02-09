@@ -1,6 +1,9 @@
 FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
+ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
+ARG LDFLAGS="-Wl,-Bsymbolic -fPIC"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu/
 
 # Install dependencies
@@ -18,13 +21,80 @@ RUN apt-get update && \
         nasm \
         ninja-build \
         libnuma1 \
-        libgl1-mesa-glx && \
+        libgl1-mesa-glx \
+        cmake \
+        libass-dev \
+        autoconf \
+        openssl \
+        automake \
+        libtool \
+        libevent-dev \
+        libjpeg-dev \
+        libgif-dev \
+        libpng-dev \
+        libwebp-dev \
+        libmemcached-dev \
+        imagemagick \
+        libpython3-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        libswscale-dev \
+        libavutil-dev \
+        libswresample-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir meson
+RUN pip3 install --no-cache-dir meson cython sphinx
 
-# Install FFMPEG
+# Build avisynth
+RUN git clone https://github.com/AviSynth/AviSynthPlus.git /AviSynthPlus && mkdir -p /AviSynthPlus/avisynth-build
+WORKDIR /AviSynthPlus/avisynth-build
+RUN cmake ../ -DHEADERS_ONLY:bool=on && \
+    make install
+
+# Build vapoursynth
+RUN mkdir -p /vapoursynth/dependencies && git clone https://github.com/sekrit-twc/zimg -b master --depth=1 /vapoursynth/dependencies/zimg
+WORKDIR /vapoursynth/dependencies/zimg
+RUN ./autogen.sh  && \
+    ./configure --enable-x86simd --disable-static --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN git clone https://github.com/vapoursynth/vapoursynth.git /vapoursynth/build
+WORKDIR /vapoursynth/build
+RUN ./autogen.sh && \
+    ./configure --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+# Build ffmpeg
+RUN git clone --branch release/4.3 git://source.ffmpeg.org/ffmpeg /ffmpeg
+WORKDIR /ffmpeg
+RUN ./configure --enable-gpl --enable-version3 --enable-shared --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc && \
+    make -j"$(nproc)" && \
+    make install
+
+# Install ffms2
+RUN git clone https://github.com/FFMS/ffms2.git /ffms2 && mkdir -p /ffms2/src/config
+WORKDIR /ffms2/
+RUN autoreconf -fiv && \
+    ./configure --enable-shared  && \
+    make -j"$(nproc)" && \
+    make install
+
+# Install lsmash
+RUN git clone https://github.com/l-smash/l-smash /lsmash
+WORKDIR /lsmash
+RUN ./configure --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN git clone https://github.com/HolyWu/L-SMASH-Works.git /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
+WORKDIR /lsmash-plugin/build-vapoursynth
+RUN meson "../VapourSynth" && \
+    ninja
+
+# Install Johnvansickle FFMPEG
 RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
     tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
