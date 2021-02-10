@@ -86,22 +86,22 @@ RUN autoreconf -fiv && \
     ln -s /ffms2/src/core/.libs/libffms2.so /usr/local/lib/vapoursynth
 
 # Install lsmash
-#RUN git clone https://github.com/l-smash/l-smash /lsmash
-#WORKDIR /lsmash
-#RUN ./configure --enable-shared && \
-#    make -j"$(nproc)" && \
-#    make install
-#
-#RUN git clone https://github.com/HolyWu/L-SMASH-Works.git /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
-#WORKDIR /lsmash-plugin/build-vapoursynth
-#RUN meson "../VapourSynth" && \
-#    ninja && \
-#    ninja install
-#
-#WORKDIR /lsmash-plugin/build-avisynth
-#RUN meson "../AviSynth" && \
-#    ninja
-#
+RUN git clone https://github.com/l-smash/l-smash /lsmash
+WORKDIR /lsmash
+RUN ./configure --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN git clone --branch 20200728 https://github.com/HolyWu/L-SMASH-Works.git /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
+WORKDIR /lsmash-plugin/build-vapoursynth
+RUN meson "../VapourSynth" && \
+    ninja && \
+    ninja install
+
+WORKDIR /lsmash-plugin/build-avisynth
+RUN meson "../AviSynth" && \
+    ninja
+
 # Install Johnvansickle FFMPEG
 WORKDIR /
 RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
