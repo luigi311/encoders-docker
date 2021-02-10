@@ -77,7 +77,7 @@ before_script:
       CONTAINER="${CI_REGISTRY_IMAGE}/${DOCKER_CONTAINER_NAME}:${LATEST}"
     fi
 
-    if [ "$DOCKER_CONTAINER_NAME" == "svt-hevc" ] || [ "$DOCKER_CONTAINER_NAME" == "rav1e" ]; then
+    if [ "$DOCKER_CONTAINER_NAME" == "svt-hevc" ] || [ "$DOCKER_CONTAINER_NAME" == "rav1e" ] || [ "$DOCKER_CONTAINER_NAME" == "ffmpeg" ]; then
       # Volume mounting due to no support for stdin and std out
       docker run -v $(pwd)/videos:/videos "$CONTAINER" $DOCKER_COMMAND
     else
@@ -100,6 +100,7 @@ before_script:
 .deployer:
   script: &deployer |
     # Build final image using branch images if on branches or main if on master
+    sed -i 's/ffmpeg:latest/ffmpeg:'"${LATEST}"'/g' Dockerfile
     sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile
     sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile
     sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile
@@ -122,6 +123,10 @@ before_script:
     ${CONTAINER_RELEASE_IMAGE:+docker push $CONTAINER_RELEASE_IMAGE}
 
 # Build
+ffmpeg:
+  stage: build
+  extends: .builder
+
 aomenc:
   stage: build
   extends: .builder
@@ -151,6 +156,18 @@ vpxenc:
   extends: .builder
 
 # Testing
+tester-ffmpeg:
+  stage: test
+  needs: ["ffmpeg"]
+  except:
+    variables:
+      - $CI_REGISTRY == "docker.io"
+  variables:
+    DOCKER_CONTAINER_NAME: "ffmpeg"
+    DOCKER_COMMAND: " -i /videos/akiyo_cif.y4m /videos/test.mp4"
+    OUTPUT_FILE: "videos/test.mp4"
+  extends: .tester
+
 tester-aomenc:
   stage: test
   needs: ["aomenc"]
@@ -242,6 +259,15 @@ tester-vpxenc:
 deploy:
   stage: deploy
   extends: .deployer
+
+validator-ffmpeg:
+  stage: validation
+  needs: ["deploy"]
+  variables:
+    DOCKER_CONTAINER_NAME: "ffmpeg"
+    DOCKER_COMMAND: "ffmpeg -i /videos/akiyo_cif.y4m /videos/test.mp4"
+    OUTPUT_FILE: "videos/test.mp4"
+  extends: .tester
 
 validator-aomenc:
   stage: validation
