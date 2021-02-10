@@ -1,0 +1,55 @@
+FROM ubuntu:20.04
+
+# Set to noninteractive to fix issue with tzdate
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
+
+# Install Dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        pkg-config \
+        git \
+        curl \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        python3-docutils \
+        build-essential \
+        nasm \
+        ninja-build \
+        libnuma1 \
+        libgl1-mesa-glx \
+        cmake \
+        libass-dev \
+        autoconf \
+        openssl \
+        automake \
+        libtool \
+        libevent-dev \
+        libjpeg-dev \
+        libgif-dev \
+        libpng-dev \
+        libwebp-dev \
+        libmemcached-dev \
+        imagemagick \
+        libpython3-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        libswscale-dev \
+        libavutil-dev \
+        libswresample-dev \
+        libdevil-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Build ffmpeg
+RUN git clone --branch release/4.3 git://source.ffmpeg.org/ffmpeg /ffmpeg
+WORKDIR /ffmpeg
+RUN ./configure --enable-gpl --enable-version3 --enable-shared --cc=gcc && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN /usr/local/bin/ffmpeg --help
+
+ENTRYPOINT [ "/usr/local/bin/ffmpeg" ]

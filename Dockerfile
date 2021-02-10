@@ -1,7 +1,10 @@
 FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu/
+ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
+ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
+ARG LDFLAGS="-Wl,-Bsymbolic -fPIC"
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install dependencies
 RUN apt-get update && \
@@ -18,32 +21,97 @@ RUN apt-get update && \
         nasm \
         ninja-build \
         libnuma1 \
-        libgl1-mesa-glx && \
+        libgl1-mesa-glx \
+        cmake \
+        libass-dev \
+        autoconf \
+        openssl \
+        automake \
+        libtool \
+        libevent-dev \
+        libjpeg-dev \
+        libgif-dev \
+        libpng-dev \
+        libwebp-dev \
+        libmemcached-dev \
+        imagemagick \
+        libpython3-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        libswscale-dev \
+        libavutil-dev \
+        libswresample-dev \
+        libdevil-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir meson
+RUN pip3 install --no-cache-dir meson cython sphinx
 
-# Install FFMPEG
+# Build avisynth
+RUN git clone https://github.com/AviSynth/AviSynthPlus.git /AviSynthPlus && mkdir -p /AviSynthPlus/avisynth-build
+WORKDIR /AviSynthPlus/avisynth-build
+RUN cmake -S .. -DCMAKE_BUILD_TYPE:STRING='None' -Wno-dev && \
+    make -j"$(nproc)" && \
+    make install
+
+# Install ffmpeg
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg /ffmpeg
+WORKDIR /ffmpeg
+RUN make install
+
+# Build vapoursynth
+RUN mkdir -p /vapoursynth/dependencies && git clone https://github.com/sekrit-twc/zimg -b master --depth=1 /vapoursynth/dependencies/zimg
+WORKDIR /vapoursynth/dependencies/zimg
+RUN ./autogen.sh  && \
+    ./configure --enable-x86simd --disable-static --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN git clone https://github.com/vapoursynth/vapoursynth.git /vapoursynth/build
+WORKDIR /vapoursynth/build
+RUN ./autogen.sh && \
+    ./configure --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN pip3 install VapourSynth
+
+# Install ffms2
+RUN git clone https://github.com/FFMS/ffms2.git /ffms2 && mkdir -p /ffms2/src/config
+WORKDIR /ffms2/
+RUN autoreconf -fiv && \
+    ./configure --enable-shared  && \
+    make -j"$(nproc)" && \
+    make install && \
+    ln -s /ffms2/src/core/.libs/libffms2.so /usr/local/lib/vapoursynth
+
+# Install lsmash
+RUN git clone https://github.com/l-smash/l-smash /lsmash
+WORKDIR /lsmash
+RUN ./configure --enable-shared && \
+    make -j"$(nproc)" && \
+    make install
+
+RUN git clone https://github.com/HolyWu/L-SMASH-Works.git /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
+WORKDIR /lsmash-plugin/build-vapoursynth
+RUN meson "../VapourSynth" && \
+    ninja && \
+    ninja install
+
+WORKDIR /lsmash-plugin/build-avisynth
+RUN meson "../AviSynth" && \
+    ninja
+
+# Install Johnvansickle FFMPEG
+WORKDIR /
 RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
     tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
-# Clone libvmaf
-RUN git clone https://github.com/Netflix/vmaf.git /vmaf
-WORKDIR /vmaf/libvmaf
-
-# Checkout libvmaf version used by FFMPEG build
-RUN TAG=$(curl https://johnvansickle.com/ffmpeg/release-readme.txt 2>&1 | awk -F':' ' /libvmaf/ { print $2 }' | xargs) && \
-    GITTAG=$(git tag | grep "$TAG") && \
-    echo "Checking out $GITTAG" && \
-    git checkout "tags/$GITTAG"
-
 # Install libvmaf
-RUN meson build --buildtype release && \
-    ninja -vC build && \
-    ninja -vC build test && \
-    ninja -vC build install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
+WORKDIR /vmaf/libvmaf
+RUN ninja -vC build install
 
 # Install aomenc
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/local/bin/aomenc /usr/local/bin
