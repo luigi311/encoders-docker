@@ -165,7 +165,7 @@ tester-ffmpeg:
   variables:
     DOCKER_CONTAINER_NAME: "ffmpeg"
     DOCKER_COMMAND: " -i /videos/akiyo_cif.y4m /videos/test.mp4"
-    OUTPUT_FILE: "/videos/test.mp4"
+    OUTPUT_FILE: "videos/test.mp4"
   extends: .tester
 
 tester-aomenc:
@@ -178,7 +178,7 @@ tester-aomenc:
     DOCKER_CONTAINER_NAME: "aomenc"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
     DOCKER_COMMAND: "--rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
-    OUTPUT_FILE: "/videos/akiyo_cif.ivf"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
   extends: .tester
 
 tester-svt-av1:
@@ -191,7 +191,7 @@ tester-svt-av1:
     DOCKER_CONTAINER_NAME: "svt-av1"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
     DOCKER_COMMAND: "--preset 8 -i /dev/stdin -b /dev/stdout"
-    OUTPUT_FILE: "/videos/akiyo_cif.ivf"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
   extends: .tester
 
 tester-rav1e:
@@ -204,7 +204,7 @@ tester-rav1e:
     DOCKER_CONTAINER_NAME: "rav1e"
     DEPENDENCIES: "git meson gcc g++ nasm samurai"
     DOCKER_COMMAND: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
-    OUTPUT_FILE: "/videos/akiyo_cif.ivf"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
   extends: .tester
 
 tester-x265:
@@ -216,7 +216,7 @@ tester-x265:
   variables:
     DOCKER_CONTAINER_NAME: "x265"
     DOCKER_COMMAND: "--y4m --preset 0 /dev/stdin -o /dev/stdout"
-    OUTPUT_FILE: "/videos/akiyo_cif.h265"
+    OUTPUT_FILE: "videos/akiyo_cif.h265"
   extends: .tester
 
 tester-svt-hevc:
@@ -228,7 +228,7 @@ tester-svt-hevc:
   variables:
     DOCKER_CONTAINER_NAME: "svt-hevc"
     DOCKER_COMMAND: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
-    OUTPUT_FILE: "/videos/akiyo_cif.bin"
+    OUTPUT_FILE: "videos/akiyo_cif.bin"
   extends: .tester
 
 tester-x264:
@@ -240,7 +240,7 @@ tester-x264:
   variables:
     DOCKER_CONTAINER_NAME: "x264"
     DOCKER_COMMAND: "--demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
-    OUTPUT_FILE: "/videos/akiyo_cif.mkv"
+    OUTPUT_FILE: "videos/akiyo_cif.mkv"
   extends: .tester
 
 tester-vpxenc:
@@ -252,7 +252,7 @@ tester-vpxenc:
   variables:
     DOCKER_CONTAINER_NAME: "vpxenc"
     DOCKER_COMMAND: "--codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
-    OUTPUT_FILE: "/videos/akiyo_cif.ivf"
+    OUTPUT_FILE: "videos/akiyo_cif.ivf"
   extends: .tester
 
 # Deploy
@@ -266,7 +266,7 @@ validator-ffmpeg:
   variables:
     DOCKER_CONTAINER_NAME: "ffmpeg"
     DOCKER_COMMAND: " -i /videos/akiyo_cif.y4m /videos/test.mp4"
-    OUTPUT_FILE: "/videos/test.mp4"
+    OUTPUT_FILE: "videos/test.mp4"
   extends: .tester
 
 validator-aomenc:
