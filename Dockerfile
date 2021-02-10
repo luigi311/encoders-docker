@@ -100,7 +100,8 @@ RUN meson "../VapourSynth" && \
 
 WORKDIR /lsmash-plugin/build-avisynth
 RUN meson "../AviSynth" && \
-    ninja
+    ninja && \
+    ninja install
 
 # Install Johnvansickle FFMPEG
 WORKDIR /
