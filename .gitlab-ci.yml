@@ -265,7 +265,7 @@ validator-ffmpeg:
   needs: ["deploy"]
   variables:
     DOCKER_CONTAINER_NAME: "ffmpeg"
-    DOCKER_COMMAND: " -i /videos/akiyo_cif.y4m /videos/test.mp4"
+    DOCKER_COMMAND: "ffmpeg -i /videos/akiyo_cif.y4m /videos/test.mp4"
     OUTPUT_FILE: "videos/test.mp4"
   extends: .tester
 

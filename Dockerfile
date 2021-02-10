@@ -108,20 +108,10 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-stat
     tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
-# Clone libvmaf
-RUN git clone https://github.com/Netflix/vmaf.git /vmaf
-WORKDIR /vmaf/libvmaf
-
-# Checkout libvmaf version used by FFMPEG build
-RUN TAG=$(curl https://johnvansickle.com/ffmpeg/release-readme.txt 2>&1 | awk -F':' ' /libvmaf/ { print $2 }' | xargs) && \
-    GITTAG=$(git tag | grep "$TAG") && \
-    echo "Checking out $GITTAG" && \
-    git checkout "tags/$GITTAG"
-
 # Install libvmaf
-RUN meson build --buildtype release && \
-    ninja -vC build || ninja -vC build && \
-    ninja -vC build install
+RUN COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
+WORKDIR /vmaf/libvmaf
+RUN ninja -vC build install
 
 # Install aomenc
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/local/bin/aomenc /usr/local/bin
