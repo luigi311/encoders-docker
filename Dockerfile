@@ -109,7 +109,7 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-stat
     mv ffmpeg-*/* /usr/local/bin/
 
 # Install libvmaf
-RUN COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
 WORKDIR /vmaf/libvmaf
 RUN ninja -vC build install
 
