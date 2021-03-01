@@ -2,6 +2,9 @@ FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
 ARG DEBIAN_FRONTEND=noninteractive
+ARG CFLAGS="-flto -O3"
+ARG CXXFLAGS="-flto -O3"
+ARG LDFLAGS="-flto -O3"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu/
 
 # Install Dependencies
@@ -45,7 +48,7 @@ RUN meson build --buildtype release && \
 RUN git clone https://aomedia.googlesource.com/aom /aom && \
     mkdir -p /aom_build
 WORKDIR /aom_build
-RUN cmake -DBUILD_SHARED_LIBS=0 -DCMAKE_BUILD_TYPE=Release /aom && \
+RUN cmake -DBUILD_SHARED_LIBS=0 -DENABLE_DOCS=0 -DENABLE_TESTS=0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-flto -O3" -DCMAKE_C_FLAGS="-flto -O3" -DCMAKE_LD_FLAGS="-flto -O3" -DCMAKE_C_FLAGS_INIT="-flto=8 -static" /aom && \
     make -j"$(nproc)" && \
     make install
 
