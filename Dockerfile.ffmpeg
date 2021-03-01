@@ -44,9 +44,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Build ffmpeg
-RUN git clone --branch release/4.3 git://source.ffmpeg.org/ffmpeg /ffmpeg
-WORKDIR /ffmpeg
-RUN ./configure --enable-gpl --enable-version3 --enable-shared --cc=gcc && \
+
+RUN git clone https://git.ffmpeg.org/ffmpeg.git /ffmpeg 
+WORKDIR /ffmpeg 
+RUN ./configure --enable-gpl --enable-version3 --enable-nonfree --enable-libx265 --enable-libvmaf && \
     make -j"$(nproc)" && \
     make install
 

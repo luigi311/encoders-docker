@@ -105,7 +105,7 @@ RUN meson "../AviSynth" && \
 
 # Install Johnvansickle FFMPEG
 WORKDIR /
-RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
     tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
