@@ -20,11 +20,25 @@ RUN apt-get update && \
         libnuma1 \
         libgl1-mesa-glx \
         cmake \
+        libass-dev \
         autoconf \
         openssl \
         automake \
         libtool \
-        imagemagick && \
+        libevent-dev \
+        libjpeg-dev \
+        libgif-dev \
+        libpng-dev \
+        libwebp-dev \
+        libmemcached-dev \
+        imagemagick \
+        libpython3-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        libswscale-dev \
+        libavutil-dev \
+        libswresample-dev \
+        libdevil-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
