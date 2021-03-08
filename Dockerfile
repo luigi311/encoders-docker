@@ -1,9 +1,6 @@
 FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install dependencies
@@ -23,25 +20,11 @@ RUN apt-get update && \
         libnuma1 \
         libgl1-mesa-glx \
         cmake \
-        libass-dev \
         autoconf \
         openssl \
         automake \
         libtool \
-        libevent-dev \
-        libjpeg-dev \
-        libgif-dev \
-        libpng-dev \
-        libwebp-dev \
-        libmemcached-dev \
-        imagemagick \
-        libpython3-dev \
-        libavformat-dev \
-        libavcodec-dev \
-        libswscale-dev \
-        libavutil-dev \
-        libswresample-dev \
-        libdevil-dev && \
+        imagemagick && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
