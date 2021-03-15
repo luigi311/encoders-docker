@@ -55,11 +55,26 @@ RUN cmake -S .. -DCMAKE_BUILD_TYPE:STRING='None' -Wno-dev && \
     make -j"$(nproc)" && \
     make install
 
+# Clone libvmaf
+RUN git clone https://github.com/Netflix/vmaf.git /vmaf
+WORKDIR /vmaf/libvmaf
+
+# Checkout libvmaf version used by FFMPEG build
+RUN TAG=$(curl https://johnvansickle.com/ffmpeg/git-readme.txt 2>&1 | awk -F':' ' /libvmaf/ { print $2 }' | xargs) && \
+    GITTAG=$(git tag | grep "$TAG") && \
+    echo "Checking out $GITTAG" && \
+    git checkout "tags/$GITTAG"
+
+# Install libvmaf
+RUN meson build --buildtype release && \
+    ninja -vC build && \
+    ninja -vC build install
+
 # Build ffmpeg
 # Pin ffmpeg to 4.3 due to https://github.com/HolyWu/L-SMASH-Works/issues/13
 RUN git clone --branch release/4.3 https://git.ffmpeg.org/ffmpeg.git /ffmpeg 
 WORKDIR /ffmpeg 
-RUN ./configure --enable-gpl --enable-version3 --enable-nonfree && \
+RUN ./configure --enable-gpl --enable-version3 --enable-nonfree --enable-libvmaf && \
     make -j"$(nproc)" && \
     make install
 
