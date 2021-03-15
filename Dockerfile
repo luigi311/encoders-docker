@@ -49,6 +49,12 @@ COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /AviSynth
 WORKDIR /AviSynthPlus/avisynth-build
 RUN make install
 
+# Install libvmaf
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /vmaf /vmaf
+WORKDIR /vmaf/libvmaf
+RUN ninja -vC build install && \
+    ln -s /vmaf/model /usr/local/share/model
+
 # Install ffmpeg
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg /ffmpeg
 WORKDIR /ffmpeg
@@ -87,12 +93,6 @@ WORKDIR /
 RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
     tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
-
-# Install libvmaf
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
-WORKDIR /vmaf/libvmaf
-RUN ninja -vC build install && \
-    ln -s /vmaf/model /usr/local/share/model
 
 # Install aomenc
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/local/bin/aomenc /usr/local/bin
