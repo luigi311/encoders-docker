@@ -91,7 +91,8 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar
 # Install libvmaf
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
 WORKDIR /vmaf/libvmaf
-RUN ninja -vC build install
+RUN ninja -vC build install && \
+    ln -s /vmaf/model /usr/local/share/model
 
 # Install aomenc
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/local/bin/aomenc /usr/local/bin
