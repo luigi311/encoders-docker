@@ -9,6 +9,7 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        jq \
         pkg-config \
         git \
         curl \
