@@ -60,7 +60,7 @@ COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg /
 WORKDIR /ffmpeg
 RUN make install
 
-# Build vapoursynth
+# Install vapoursynth dependencies
 RUN mkdir -p /vapoursynth/dependencies && git clone https://github.com/sekrit-twc/zimg -b master --depth=1 /vapoursynth/dependencies/zimg
 WORKDIR /vapoursynth/dependencies/zimg
 RUN ./autogen.sh  && \
@@ -68,7 +68,9 @@ RUN ./autogen.sh  && \
     make -j"$(nproc)" && \
     make install
 
-RUN git clone https://github.com/vapoursynth/vapoursynth.git /vapoursynth/build
+# Install Vapoursynth
+# Pin to 54 as 55+ breaks lsmash
+RUN git clone --branch R54 https://github.com/vapoursynth/vapoursynth.git /vapoursynth/build
 WORKDIR /vapoursynth/build
 RUN ./autogen.sh && \
     ./configure --enable-shared && \
