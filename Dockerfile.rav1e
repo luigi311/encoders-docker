@@ -10,8 +10,9 @@ RUN apt-get update && \
 # Install rav1e
 RUN git clone https://github.com/xiph/rav1e.git
 WORKDIR /rav1e
-RUN cargo build --release && \
-    cp /rav1e/target/release/rav1e /usr/local/bin
+RUN cargo install cargo-c && \
+    cargo build --release && \
+    cargo cinstall --library-type=staticlib --crt-static --release --prefix=/usr/local
 
 RUN  /usr/local/bin/rav1e --help
 
