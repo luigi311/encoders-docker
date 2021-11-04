@@ -26,23 +26,11 @@ RUN apt-get update && \
 
 RUN pip3 install --no-cache-dir meson
 
-# Clone libvmaf
-RUN git clone https://github.com/Netflix/vmaf.git /vmaf
-WORKDIR /vmaf/libvmaf
-
-# Checkout libvmaf version used by FFMPEG build
-# Remove dynamic vmaf due to vmaf not matching actual build
-#TAG=$(curl https://johnvansickle.com/ffmpeg/release-readme.txt 2>&1 | awk -F':' ' /libvmaf/ { print $2 }' | xargs)
-RUN TAG=1.5.3 && \
-    GITTAG=$(git tag | grep "$TAG") && \
-    echo "Checking out $GITTAG" && \
-    git checkout "tags/$GITTAG"
-
 # Install libvmaf
-RUN meson build --buildtype release && \
-    ninja -vC build && \
-    ninja -vC build test && \
-    ninja -vC build install
+RUN git clone https://github.com/Netflix/vmaf.git /vmaf
+WORKDIR /vmaf
+RUN meson setup libvmaf libvmaf/build --default-library static --buildtype release -Dbuilt_in_models=true && \
+    ninja -vC libvmaf/build install
 
 # Install aomenc
 RUN git clone https://aomedia.googlesource.com/aom /aom && \
