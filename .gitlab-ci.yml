@@ -123,10 +123,6 @@ before_script:
     ${CONTAINER_RELEASE_IMAGE:+docker push $CONTAINER_RELEASE_IMAGE}
 
 # Build
-ffmpeg:
-  stage: build
-  extends: .builder
-
 aomenc:
   stage: build
   extends: .builder
@@ -154,6 +150,11 @@ x264:
 vpxenc:
   stage: build
   extends: .builder
+
+ffmpeg:
+  stage: build
+  extends: .builder
+  needs: [aomenc, svt-av1, rav1e, x265, svt-hevc, x264, vpxenc]
 
 # Testing
 tester-ffmpeg:
