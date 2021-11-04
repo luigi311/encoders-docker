@@ -20,7 +20,9 @@ RUN apt-get update && \
         ninja-build \
         cmake \
         nasm \
-        yasm && \
+        yasm \
+        vim \
+        nano && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -28,9 +30,11 @@ RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
 RUN git clone https://github.com/Netflix/vmaf.git /vmaf
-WORKDIR /vmaf
-RUN meson setup libvmaf libvmaf/build --default-library static --buildtype release -Dbuilt_in_models=true && \
-    ninja -vC libvmaf/build install
+WORKDIR /vmaf/libvmaf
+RUN meson build --default-library static --buildtype release -Dbuilt_in_models=true && \
+    ninja -vC build && \
+    ninja -vC build test && \
+    ninja -vC build install
 
 # Install aomenc
 RUN git clone https://aomedia.googlesource.com/aom /aom && \
