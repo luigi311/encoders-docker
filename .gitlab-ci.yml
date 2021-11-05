@@ -34,6 +34,17 @@ before_script:
       fi
     fi
 
+    if [ "$CI_JOB_NAME" == "ffmpeg" ]; then
+      sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
+      sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile.ffmpeg
+      sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile.ffmpeg
+      sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile.ffmpeg
+      sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile.ffmpeg
+      sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile.ffmpeg
+      sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    fi
+
+
 .builder:
   except:
     variables:
@@ -152,14 +163,6 @@ vpxenc:
   extends: .builder
 
 ffmpeg:
-  before_script:
-    - sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    - sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    - sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    - sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    - sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    - sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    - sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
   stage: build
   extends: .builder
   needs: [aomenc, svt-av1, rav1e, x265, svt-hevc, x264, vpxenc]
