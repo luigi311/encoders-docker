@@ -25,7 +25,7 @@ RUN git clone https://code.videolan.org/videolan/x264.git /x264
 WORKDIR /x264
 RUN ./configure --enable-static --enable-pic && \
     make -j$(nproc) && \
-    checkinstall --install=yes --default -D --pkgname "x264" make install && \
+    checkinstall --install=yes --default -D --pkgname "x264" --pkgversion "1" make install && \
     cp x264_*.deb /x264.deb
 
 RUN /usr/local/bin/x264 --help
