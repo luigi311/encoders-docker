@@ -18,7 +18,8 @@ RUN apt-get update && \
         libx265-dev \
         libnuma-dev \
         mercurial \
-        nasm && \
+        nasm \
+        checkinstall && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -27,9 +28,11 @@ RUN git clone https://github.com/videolan/x265.git /x265
 WORKDIR /x265/build/linux
 RUN chmod +x multilib.sh && \
     sed -i "s/-DLINKED_12BIT=ON/-DLINKED_12BIT=ON -DENABLE_SHARED=OFF/g" multilib.sh && \
-    MAKEFLAGS="-j$(nproc)" ./multilib.sh && \
-    cp 8bit/x265 /usr/local/bin && \
-    cp 8bit/libx265.a /usr/local/lib
+    MAKEFLAGS="-j$(nproc)" ./multilib.sh
+
+WORKDIR /x265/build/linux/8bit
+RUN checkinstall --install=yes --default -D --pkgname "x265" make install && \
+    cp x265_*.deb /x265.deb
 
 # x265 reports error on --help
 #RUN /usr/local/bin/x265 --help

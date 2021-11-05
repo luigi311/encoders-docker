@@ -46,27 +46,24 @@ RUN apt-get update && \
         libx265-dev \
         libnuma-dev \
         vim \
-        nano && \
+        nano \
+        checkinstall && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
-WORKDIR /vmaf/libvmaf
-RUN ninja -vC build install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
+RUN dpkg -i /vmaf.deb
 
 # Install aomenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aom /aom
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aom_build /aom_build
-WORKDIR /aom_build
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /
+RUN dpkg -i /aomenc.deb
 
 # Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /SVT-AV1 /SVT-AV1
-WORKDIR /SVT-AV1/Build/linux/Release
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
+RUN dpkg -i /svt-av1.deb
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain nightly
@@ -79,32 +76,26 @@ RUN cargo install cargo-c && \
     cargo cinstall --library-type=staticlib --crt-static --release --prefix=/usr/local
 
 # Install x265
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265 /x265
-WORKDIR /x265/build/linux/8bit
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265.deb /
+RUN dpkg -i /x265.deb
 
 # Install svt-hevc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /SVT-HEVC /SVT-HEVC
-WORKDIR /SVT-HEVC/Build/linux/Release
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /
+RUN dpkg -i /svt-hevc.deb
 
 # Install x264
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264 /x264
-WORKDIR /x264
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /
+RUN dpkg -i /x264.deb
 
 # Install vpxenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc /vpxenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /build /build
-WORKDIR /build
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
+RUN dpkg -i /vpxenc.deb
+
+# Clone ffmpeg
+RUN git clone --branch release/4.4 git://source.ffmpeg.org/ffmpeg /ffmpeg
+WORKDIR /ffmpeg
 
 # Build ffmpeg
-RUN git clone git://source.ffmpeg.org/ffmpeg /ffmpeg
-WORKDIR /ffmpeg
-# Patch ffmpeg to use vmaf2.X
-RUN curl https://gitlab.com/1480c1/SVT-AV1/-/raw/svt-ffmpeg/0001-avfilter-vf_libvmaf-update-filter-for-libvmaf-v2.0.0.patch --output 0001-avfilter-vf_libvmaf-update-filter-for-libvmaf-v2.0.0.patch && \
-    patch -p1 < 0001-avfilter-vf_libvmaf-update-filter-for-libvmaf-v2.0.0.patch
 RUN ./configure \
         --ld="g++" \
         --pkg-config-flags="--static" \
@@ -126,7 +117,8 @@ RUN ./configure \
         --enable-libvmaf
 
 RUN make -j"$(nproc)" && \
-    make install
+    checkinstall --install=yes --default -D --pkgname "ffmpeg" make install && \
+    cp ffmpeg_*.deb /ffmpeg.deb
 
 RUN /usr/local/bin/ffmpeg --help
 

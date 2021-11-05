@@ -27,6 +27,8 @@ RUN apt-get update && \
         libass-dev \
         autoconf \
         openssl \
+        libssl-dev \
+        doxygen \
         automake \
         libtool \
         libevent-dev \
@@ -42,11 +44,53 @@ RUN apt-get update && \
         libswscale-dev \
         libavutil-dev \
         libswresample-dev \
-        libdevil-dev && \
+        libdevil-dev \
+        libx265-dev \
+        libnuma-dev \
+        vim \
+        nano && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache-dir meson cython sphinx
+
+# Install libvmaf
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
+RUN dpkg -i /vmaf.deb
+
+# Install aomenc
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /
+RUN dpkg -i /aomenc.deb
+
+# Install svt-av1
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
+RUN dpkg -i /svt-av1.deb
+
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain nightly
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install rav1e
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e /rav1e
+WORKDIR /rav1e
+RUN cargo install cargo-c && \
+    cargo cinstall --library-type=staticlib --crt-static --release --prefix=/usr/local
+
+# Install x265
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265.deb /
+RUN dpkg -i /x265.deb
+
+# Install svt-hevc
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /
+RUN dpkg -i /svt-hevc.deb
+
+# Install x264
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /
+RUN dpkg -i /x264.deb
+
+# Install vpxenc
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
+RUN dpkg -i /vpxenc.deb
 
 # Build avisynth
 RUN git clone https://github.com/AviSynth/AviSynthPlus.git /AviSynthPlus && mkdir -p /AviSynthPlus/avisynth-build
@@ -56,15 +100,14 @@ RUN cmake -S .. -DCMAKE_BUILD_TYPE:STRING='None' -Wno-dev && \
     make install
 
 # Install ffmpeg
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg /ffmpeg
-WORKDIR /ffmpeg
-RUN make install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg.deb /
+RUN dpkg -i /ffmpeg.deb
 
 # Install vapoursynth dependencies
 RUN mkdir -p /vapoursynth/dependencies && git clone https://github.com/sekrit-twc/zimg -b master --depth=1 /vapoursynth/dependencies/zimg
 WORKDIR /vapoursynth/dependencies/zimg
 RUN ./autogen.sh  && \
-    ./configure --enable-x86simd --disable-static --enable-shared && \
+    ./configure --enable-static --disable-shared && \
     make -j"$(nproc)" && \
     make install
 
@@ -73,7 +116,7 @@ RUN ./autogen.sh  && \
 RUN git clone --branch R54 https://github.com/vapoursynth/vapoursynth.git /vapoursynth/build
 WORKDIR /vapoursynth/build
 RUN ./autogen.sh && \
-    ./configure --enable-shared && \
+    ./configure --enable-static --disable-shared && \
     make -j"$(nproc)" && \
     make install
 
@@ -83,7 +126,7 @@ RUN pip3 install VapourSynth
 RUN git clone https://github.com/FFMS/ffms2.git /ffms2 && mkdir -p /ffms2/src/config
 WORKDIR /ffms2/
 RUN autoreconf -fiv && \
-    ./configure --enable-shared  && \
+    ./configure --enable-static --disable-shared  && \
     make -j"$(nproc)" && \
     make install && \
     ln -s /ffms2/src/core/.libs/libffms2.so /usr/local/lib/vapoursynth
@@ -91,53 +134,20 @@ RUN autoreconf -fiv && \
 # Install lsmash
 RUN git clone https://github.com/l-smash/l-smash /lsmash
 WORKDIR /lsmash
-RUN ./configure --enable-shared && \
+RUN ./configure && \
     make -j"$(nproc)" && \
     make install
-
-RUN git clone --branch 20200728 https://github.com/HolyWu/L-SMASH-Works.git /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
+RUN echo "test"
+RUN git clone https://github.com/luigi311/L-SMASH-Works /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
 WORKDIR /lsmash-plugin/build-vapoursynth
-RUN meson "../VapourSynth" && \
+RUN meson "../VapourSynth" --default-library static && \
     ninja && \
     ninja install
 
 WORKDIR /lsmash-plugin/build-avisynth
-RUN meson "../AviSynth" && \
+RUN meson "../AviSynth" --default-library static && \
     ninja && \
     ninja install
-
-# Install Johnvansickle FFMPEG
-WORKDIR /
-RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
-    tar xf ffmpeg-* && \
-    mv ffmpeg-*/* /usr/local/bin/
-
-# Install libvmaf
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf /vmaf
-WORKDIR /vmaf/libvmaf
-RUN ninja -vC build install
-
-# Install aomenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /usr/local/bin/aomenc /usr/local/bin
-
-# Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /usr/local/bin/SvtAv1EncApp /usr/local/bin
-
-# Install rav1e
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /usr/local/bin/rav1e /usr/local/bin
-
-# Install x265
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /usr/local/bin/x265 /usr/local/bin
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /usr/local/lib/libx265.a /usr/local/lib
-
-# Install svt-hevc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /usr/local/bin/SvtHevcEncApp /usr/local/bin
-
-# Install x264
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /usr/local/bin/x264 /usr/local/bin
-
-# Install vpxenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /usr/local/bin/vpxenc /usr/local/bin
 
 # Reset workdir to root
 WORKDIR /

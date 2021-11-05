@@ -12,7 +12,8 @@ RUN apt-get update && \
         python3-wheel \
         build-essential \
         cmake \
-        yasm && \
+        yasm \
+        checkinstall && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -20,7 +21,8 @@ RUN apt-get update && \
 RUN git clone https://github.com/OpenVisualCloud/SVT-HEVC.git /SVT-HEVC
 WORKDIR /SVT-HEVC/Build/linux/Release
 RUN cmake -S /SVT-HEVC/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF && \
-    cmake --build . --target install
+    checkinstall --install=yes --default -D --pkgname "svt-hevc" cmake --build . --target install && \
+    cp svt-hevc_*.deb /svt-hevc.deb
 
 RUN /usr/local/bin/SvtHevcEncApp --help
 

@@ -15,7 +15,8 @@ RUN apt-get update && \
         build-essential \
         cmake \
         libvpx-dev \
-        yasm && \
+        yasm \
+        checkinstall && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -25,7 +26,8 @@ RUN git clone https://chromium.googlesource.com/webm/libvpx.git /vpxenc && \
 WORKDIR /build
 RUN ../vpxenc/configure --enable-vp9-highbitdepth --as=yasm && \
     make -j$(nproc) && \
-    make install
+    checkinstall --install=yes --default -D --pkgname "vpxenc" make install && \
+    cp vpxenc_*.deb /vpxenc.deb
 
 RUN /usr/local/bin/vpxenc --help
 
