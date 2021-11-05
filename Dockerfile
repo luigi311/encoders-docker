@@ -54,6 +54,10 @@ RUN apt-get update && \
 
 RUN pip3 install --no-cache-dir meson cython sphinx
 
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain nightly
+ENV PATH="/root/.cargo/bin:$PATH"
+
 # Install libvmaf
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
 RUN dpkg -i /vmaf.deb
@@ -66,15 +70,9 @@ RUN dpkg -i /aomenc.deb
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
 RUN dpkg -i /svt-av1.deb
 
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain nightly
-ENV PATH="/root/.cargo/bin:$PATH"
-
 # Install rav1e
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e /rav1e
-WORKDIR /rav1e
-RUN cargo install cargo-c && \
-    cargo cinstall --library-type=staticlib --crt-static --release --prefix=/usr/local
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e-static/usr /usr
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /usr/local/bin/rav1e /usr/local/bin/rav1e
 
 # Install x265
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265.deb /
