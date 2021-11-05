@@ -54,35 +54,35 @@ RUN apt-get update && \
 RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /vmaf.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
 RUN dpkg -i /vmaf.deb
 
 # Install aomenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /aomenc.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /
 RUN dpkg -i /aomenc.deb
 
 # Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:static-latest /svt-av1.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
 RUN dpkg -i /svt-av1.deb
 
 # Install rav1e
-COPY --from=rav1e /rav1e-static/usr /usr
-COPY --from=rav1e /usr/local/bin/rav1e /usr/local/bin/rav1e
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e-static/usr /usr
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /usr/local/bin/rav1e /usr/local/bin/rav1e
 
 # Install x265
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:static-latest /x265.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265.deb /
 RUN dpkg -i /x265.deb
 
 # Install svt-hevc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:static-latest /svt-hevc.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /
 RUN dpkg -i /svt-hevc.deb
 
 # Install x264
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:static-latest /x264.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /
 RUN dpkg -i /x264.deb
 
 # Install vpxenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:static-latest /vpxenc.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
 RUN dpkg -i /vpxenc.deb
 
 # Clone ffmpeg
