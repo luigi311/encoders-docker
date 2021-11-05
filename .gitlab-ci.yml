@@ -54,19 +54,6 @@ before_script:
     docker push "$CI_REGISTRY_IMAGE/$DOCKER_CONTAINER_NAME:$LATEST"
     ${CONTAINER_RELEASE_IMAGE:+docker push $CONTAINER_RELEASE_IMAGE}
 
-.ffmpeg:
-  script: &ffmpeg |
-    # Build final image using branch images if on branches or main if on master
-    sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile.ffmpeg
-    sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
-
-    builder
-
 .tester:
   script: &tester |
     if [ -z ${DEPENDENCIES+x} ]; then 
@@ -165,8 +152,16 @@ vpxenc:
   extends: .builder
 
 ffmpeg:
+  before_script:
+    - sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    - sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    - sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    - sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    - sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    - sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    - sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
   stage: build
-  extends: .ffmpeg
+  extends: .builder
   needs: [aomenc, svt-av1, rav1e, x265, svt-hevc, x264, vpxenc]
 
 # Testing
