@@ -160,6 +160,7 @@ jobs:
 
       - name: Build
         run: |
+          echo "${{ steps.create_latest.outputs.LATEST }}"
           sed -i 's/aomenc:latest/aomenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
           sed -i 's/svt-av1:latest/svt-av1:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
           sed -i 's/rav1e:latest/rav1e:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
