@@ -13,7 +13,7 @@ env:
 
 jobs:
   base:
-    name: ${{ matrix.name }} ${{ matrix.enc }}
+    name: ${{ matrix.name }}
     runs-on: self-hosted
     strategy:
       fail-fast: false
@@ -67,45 +67,14 @@ jobs:
       - name: Push
         if: "${{ steps.login_docker.outcome == 'success' }}"
         run: |
-          docker push ${{ steps.docker_meta.outputs.tags }}
-      
-      #- name: Build
-      #  id: build
-      #  if: "${{ steps.docker_meta.outcome == 'skipped' }}"
-      #  uses: docker/build-push-action@v2
-      #  with:
-      #    context: .
-      #    file: ./Dockerfile.${{ matrix.name }}
-      #    push: false
-      #    tags: registry.gitlab.com/luigi311/encoders-docker/${{ matrix.name}}:static-latest
-      
-      #- name: Build Push
-      #  id: build_push
-      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
-      #  uses: docker/build-push-action@v2
-      #  with:
-      #    context: .
-      #    file: ./Dockerfile
-      #    push: false
-      #    tags: ${{ steps.docker_meta.outputs.tags }}
-      #    labels: ${{ steps.docker_meta.outputs.labels }}
-
-      # Echo digest so users can validate their image
-      #- name: Image digest
-      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
-      #  run: echo "${{ steps.build_push.outputs.digest }}"
-    
+          docker push ${{ steps.docker_meta.outputs.tags }}"
     
     
     
   ffmpeg:
-    name: ${{ matrix.name }} ${{ matrix.enc }}
-    runs-on: ubuntu-latest
+    name: ffmpeg
+    runs-on: self-hosted
     needs: base
-    strategy:
-      fail-fast: false
-      matrix:
-        name: [ffmpeg]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -139,7 +108,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3
         with:
-          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/ffmpeg
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
@@ -174,7 +143,7 @@ jobs:
           sed -i 's/x264:latest/x264:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
           sed -i 's/vpxenc:latest/vpxenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
           docker build --compress --pull \
-            -f Dockerfile.${{ matrix.name }} \
+            -f Dockerfile.ffmpeg \
             -t ${{ steps.docker_meta.outputs.tags }} \
             "$PWD"
       
@@ -183,28 +152,3 @@ jobs:
         run: |
           docker push ${{ steps.docker_meta.outputs.tags }}
       
-      #- name: Build
-      #  id: build
-      #  if: "${{ steps.docker_meta.outcome == 'skipped' }}"
-      #  uses: docker/build-push-action@v2
-      #  with:
-      #    context: .
-      #    file: ./Dockerfile.${{ matrix.name }}
-      #    push: false
-      #    tags: registry.gitlab.com/luigi311/encoders-docker/${{ matrix.name}}:static-latest
-      
-      #- name: Build Push
-      #  id: build_push
-      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
-      #  uses: docker/build-push-action@v2
-      #  with:
-      #    context: .
-      #    file: ./Dockerfile
-      #    push: false
-      #    tags: ${{ steps.docker_meta.outputs.tags }}
-      #    labels: ${{ steps.docker_meta.outputs.labels }}
-
-      # Echo digest so users can validate their image
-      #- name: Image digest
-      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
-      #  run: echo "${{ steps.build_push.outputs.digest }}"
