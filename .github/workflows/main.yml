@@ -37,7 +37,7 @@ jobs:
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
-            type=ref,event=branch,suffix=-{{date 'YYYYMMDD'}}
+            type=ref,event=branch,suffix=-latest
             type=schedule,pattern=-{{date 'YYYYMMDD'}}
       
       - name: Set up QEMU
@@ -143,7 +143,7 @@ jobs:
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
-            type=ref,event=branch,suffix=-{{date 'YYYYMMDD'}}
+            type=ref,event=branch,suffix=-latest
             type=schedule,pattern=-{{date 'YYYYMMDD'}}
       
       - name: Set up QEMU
