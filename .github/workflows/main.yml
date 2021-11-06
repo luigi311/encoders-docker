@@ -35,8 +35,7 @@ jobs:
         if: "${{ env.DOCKER_TOKEN != '' }}"
         uses: docker/metadata-action@v3
         with:
-          images: |
-            registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
@@ -105,8 +104,7 @@ jobs:
         if: "${{ env.DOCKER_TOKEN != '' }}"
         uses: docker/metadata-action@v3
         with:
-          images: |
-            registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
