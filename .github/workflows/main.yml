@@ -119,7 +119,8 @@ jobs:
       - name: Create latest
         id: create_latest
         run: |
-          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
+          echo "${{ github.ref }}"
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             LATEST="latest"
           else
             if [ "${GITHUB_REF/refs\/tags\//}" != "" ]; then
