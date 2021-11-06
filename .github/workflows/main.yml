@@ -67,7 +67,7 @@ jobs:
       - name: Push
         if: "${{ steps.login_docker.outcome == 'success' }}"
         run: |
-          docker push ${{ steps.docker_meta.outputs.tags }}"
+          docker push ${{ steps.docker_meta.outputs.tags }}
     
     
     
