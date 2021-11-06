@@ -117,6 +117,7 @@ jobs:
       #    ./free_disk_space.sh
       
       - name: Create latest
+        id: create_latest
         run: |
           if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
             LATEST="latest"
@@ -159,6 +160,13 @@ jobs:
 
       - name: Build
         run: |
+          sed -i 's/aomenc:latest/aomenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/svt-av1:latest/svt-av1:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/rav1e:latest/rav1e:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/x265:latest/x265:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/svt-hevc:latest/svt-hevc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/x264:latest/x264:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/vpxenc:latest/vpxenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
           docker build --compress --pull \
             -f Dockerfile.${{ matrix.name }} \
             -t ${{ steps.docker_meta.outputs.tags }} \
