@@ -36,7 +36,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}} # list of Docker images to use as base name for tags
+            registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
@@ -106,7 +106,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}} # list of Docker images to use as base name for tags
+            registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
