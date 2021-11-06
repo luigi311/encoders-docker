@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_name: [aomenc]
+        name: [aomenc]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -24,19 +24,18 @@ jobs:
       - name: Docker meta
         id: docker_meta
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        if: "${{ env.DOCKERHUB_USERNAME != '' }}"
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        if: "${{ env.DOCKER_USERNAME != '' }}"
         uses: docker/metadata-action@v3
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/arbluna # list of Docker images to use as base name for tags
+          images: |
+            ${{ secrets.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}} # list of Docker images to use as base name for tags
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
+            type=ref,event=branch,suffix={{date 'YYYYMMDD'}}
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -47,8 +46,9 @@ jobs:
         if: "${{ steps.docker_meta.outcome == 'success' }}"
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: registry.gitlab.com
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build
         id: build
@@ -56,9 +56,79 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./Dockerfile.${{ matrix.build_name }}
+          file: ./Dockerfile.${{ matrix.name }}
           push: false
-          tags: ${{ matrix.build_name }}:static-latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}:static-latest
+      
+      - name: Build Push
+        id: build_push
+        if: "${{ steps.docker_meta.outcome == 'success' }}"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+
+      # Echo digest so users can validate their image
+      - name: Image digest
+        if: "${{ steps.docker_meta.outcome == 'success' }}"
+        run: echo "${{ steps.build_push.outputs.digest }}"
+    
+    
+    
+    
+  ffmpeg:
+    name: ${{ matrix.name }} ${{ matrix.enc }}
+    runs-on: ubuntu-latest
+    needs: base
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ffmpeg]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Docker meta
+        id: docker_meta
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        if: "${{ env.DOCKER_USERNAME != '' }}"
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ${{ secrets.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}} # list of Docker images to use as base name for tags
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            type=ref,event=branch,suffix={{date 'YYYYMMDD'}}
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        if: "${{ steps.docker_meta.outcome == 'success' }}"
+        uses: docker/login-action@v1
+        with:
+          registry: registry.gitlab.com
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build
+        id: build
+        if: "${{ steps.docker_meta.outcome == 'skipped' }}"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile.${{ matrix.name }}
+          push: false
+          tags: ${{ secrets.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}:static-latest
       
       - name: Build Push
         id: build_push
