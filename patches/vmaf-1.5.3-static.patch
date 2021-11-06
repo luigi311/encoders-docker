@@ -1,0 +1,77 @@
+diff --git a/libvmaf/meson.build b/libvmaf/meson.build
+index 788ae591..af429a23 100644
+--- a/libvmaf/meson.build
++++ b/libvmaf/meson.build
+@@ -4,6 +4,7 @@ project('libvmaf', ['c', 'cpp'],
+                        'cpp_std=c++11',
+                        'warning_level=2',
+                        'buildtype=release',
++                       'default_library=both',
+                       ],
+     meson_version: '>= 0.47.0')
+ 
+diff --git a/libvmaf/src/meson.build b/libvmaf/src/meson.build
+index 66e94f59..58cb5676 100644
+--- a/libvmaf/src/meson.build
++++ b/libvmaf/src/meson.build
+@@ -251,7 +251,7 @@ vmaf_sources = [
+     src_dir + 'vmaf.cpp',
+ ]
+ 
+-libvmaf = both_libraries(
++libvmaf = library(
+     'vmaf',
+     vmaf_sources,
+     include_directories : vmaf_include,
+@@ -313,7 +313,7 @@ libvmaf_rc_sources = [
+     src_dir + 'ref.c',
+ ]
+ 
+-libvmaf_rc = both_libraries(
++libvmaf_rc = library(
+     'vmaf_rc',
+     [libvmaf_rc_sources, rev_target],
+     include_directories : [vmaf_include, libvmaf_inc],
+diff --git a/libvmaf/test/meson.build b/libvmaf/test/meson.build
+index 68af1058..bbe99b2a 100644
+--- a/libvmaf/test/meson.build
++++ b/libvmaf/test/meson.build
+@@ -7,7 +7,7 @@ test_inc = include_directories('.')
+ test_context = executable('test_context',
+     ['test.c', 'test_context.c'],
+     include_directories : [libvmaf_inc, test_inc],
+-    link_with : libvmaf_rc.get_static_lib(),
++    link_with : get_option('default_library') == 'both' ? libvmaf_rc.get_static_lib() : libvmaf_rc,
+     dependencies:[stdatomic_dependency],
+ )
+ 
+diff --git a/libvmaf/tools/meson.build b/libvmaf/tools/meson.build
+index 2aeb783b..c00ef909 100644
+--- a/libvmaf/tools/meson.build
++++ b/libvmaf/tools/meson.build
+@@ -10,7 +10,7 @@ vmafossexec = executable(
+     dependencies: [stdatomic_dependency],
+     c_args : vmaf_cflags_common,
+     cpp_args : vmaf_cflags_common,
+-    link_with : libvmaf.get_static_lib(),
++    link_with : get_option('default_library') == 'both' ? libvmaf.get_static_lib() : libvmaf,
+     install : true,
+ )
+ 
+@@ -20,7 +20,7 @@ vmaf_rc = executable(
+     include_directories : [libvmaf_inc, vmaf_include],
+     dependencies: [stdatomic_dependency],
+     c_args : [vmaf_cflags_common, compat_cflags],
+-    link_with : libvmaf_rc.get_static_lib(),
++    link_with : get_option('default_library') == 'both' ? libvmaf_rc.get_static_lib() : libvmaf_rc,
+     install : false,
+ )
+ 
+@@ -31,6 +31,6 @@ vmaf_feature = executable(
+     dependencies: [stdatomic_dependency],
+     c_args : vmaf_cflags_common,
+     cpp_args : vmaf_cflags_common,
+-    link_with : libvmaf.get_static_lib(),
++    link_with : get_option('default_library') == 'both' ? libvmaf.get_static_lib() : libvmaf,
+     install : false,
+ )
