@@ -18,41 +18,11 @@ RUN apt-get update && \
         python3-setuptools \
         python3-wheel \
         python3-docutils \
-        build-essential \
-        nasm \
-        ninja-build \
-        libnuma1 \
-        libgl1-mesa-glx \
-        cmake \
-        libass-dev \
-        autoconf \
         openssl \
-        libssl-dev \
-        doxygen \
-        automake \
-        libtool \
-        libevent-dev \
-        libjpeg-dev \
-        libgif-dev \
-        libpng-dev \
-        libwebp-dev \
-        libmemcached-dev \
-        imagemagick \
-        libpython3-dev \
-        libavformat-dev \
-        libavcodec-dev \
-        libswscale-dev \
-        libavutil-dev \
-        libswresample-dev \
-        libdevil-dev \
-        libx265-dev \
-        libnuma-dev \
         vim \
         nano && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-RUN pip3 install --no-cache-dir meson cython sphinx
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain nightly
@@ -90,62 +60,33 @@ RUN dpkg -i /x264.deb
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
 RUN dpkg -i /vpxenc.deb
 
-# Build avisynth
-RUN git clone https://github.com/AviSynth/AviSynthPlus.git /AviSynthPlus && mkdir -p /AviSynthPlus/avisynth-build
-WORKDIR /AviSynthPlus/avisynth-build
-RUN cmake -S .. -DCMAKE_BUILD_TYPE:STRING='None' -Wno-dev && \
-    make -j"$(nproc)" && \
-    make install
-
 # Install ffmpeg
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg.deb /
 RUN dpkg -i /ffmpeg.deb
 
-# Install vapoursynth dependencies
-RUN mkdir -p /vapoursynth/dependencies && git clone https://github.com/sekrit-twc/zimg -b master --depth=1 /vapoursynth/dependencies/zimg
-WORKDIR /vapoursynth/dependencies/zimg
-RUN ./autogen.sh  && \
-    ./configure --enable-static --disable-shared && \
-    make -j"$(nproc)" && \
-    make install
+# Install avisynth
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /avisynth.deb /
+RUN dpkg -i /avisynth.deb
 
-# Install Vapoursynth
-# Pin to 54 as 55+ breaks lsmash
-RUN git clone --branch R54 https://github.com/vapoursynth/vapoursynth.git /vapoursynth/build
-WORKDIR /vapoursynth/build
-RUN ./autogen.sh && \
-    ./configure --enable-static --disable-shared && \
-    make -j"$(nproc)" && \
-    make install
-
-RUN pip3 install VapourSynth
-
-# Install ffms2
-RUN git clone https://github.com/FFMS/ffms2.git /ffms2 && mkdir -p /ffms2/src/config
-WORKDIR /ffms2/
-RUN autoreconf -fiv && \
-    ./configure --enable-static --disable-shared  && \
-    make -j"$(nproc)" && \
-    make install && \
-    ln -s /ffms2/src/core/.libs/libffms2.so /usr/local/lib/vapoursynth
+# Install vapoursynth
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /vapoursynth.deb /
+RUN dpkg -i /vapoursynth.deb
 
 # Install lsmash
-RUN git clone https://github.com/l-smash/l-smash /lsmash
-WORKDIR /lsmash
-RUN ./configure && \
-    make -j"$(nproc)" && \
-    make install
-RUN echo "test"
-RUN git clone https://github.com/luigi311/L-SMASH-Works /lsmash-plugin && mkdir -p /lsmash-plugin/build-vapoursynth /lsmash-plugin/build-avisynth
-WORKDIR /lsmash-plugin/build-vapoursynth
-RUN meson "../VapourSynth" --default-library static && \
-    ninja && \
-    ninja install
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /lsmash.deb /
+RUN dpkg -i /lsmash.deb
 
-WORKDIR /lsmash-plugin/build-avisynth
-RUN meson "../AviSynth" --default-library static && \
-    ninja && \
-    ninja install
+# Install lsmash-vapoursynth
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /lsmash-vapoursynth.deb /
+RUN dpkg -i /lsmash-vapoursynth.deb
+
+# Install lsmash-avisynth
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /lsmash-avisynth.deb /
+RUN dpkg -i /lsmash-avisynth.deb
+
+# Install ffms2
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /ffms2.deb /
+RUN dpkg -i /ffms2.deb
 
 # Reset workdir to root
 WORKDIR /

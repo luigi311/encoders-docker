@@ -42,6 +42,17 @@ before_script:
       sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile.ffmpeg
       sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile.ffmpeg
       sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile.ffmpeg
+    
+    # Else if cijobname is tools
+    elif [ "$CI_JOB_NAME" == "tools" ]; then
+      sed -i 's/aomenc:latest/aomenc:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/svt-av1:latest/svt-av1:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/rav1e:latest/rav1e:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/x265:latest/x265:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile.tools
+      sed -i 's/ffmpeg:latest/ffmpeg:'"${LATEST}"'/g' Dockerfile.tools
     fi
 
 
@@ -119,6 +130,7 @@ before_script:
     sed -i 's/svt-hevc:latest/svt-hevc:'"${LATEST}"'/g' Dockerfile
     sed -i 's/x264:latest/x264:'"${LATEST}"'/g' Dockerfile
     sed -i 's/vpxenc:latest/vpxenc:'"${LATEST}"'/g' Dockerfile
+    sed -i 's/tools:latest/tools:'"${LATEST}"'/g' Dockerfile
 
     # Tag main image with all containers
     CONTAINER_RELEASE_IMAGE=${CONTAINER_RELEASE_IMAGE-$CI_REGISTRY_IMAGE:$TIMESTAMP}
@@ -166,6 +178,11 @@ ffmpeg:
   stage: build
   extends: .builder
   needs: [aomenc, svt-av1, rav1e, x265, svt-hevc, x264, vpxenc]
+
+tools:
+  stage: build
+  extends: .builder
+  needs: [ffmpeg]
 
 # Testing
 tester-ffmpeg:
