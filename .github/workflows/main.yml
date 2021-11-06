@@ -58,7 +58,7 @@ jobs:
           context: .
           file: ./Dockerfile.${{ matrix.name }}
           push: false
-          tags: ${{ secrets.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}:static-latest
+          tags: registry.gitlab.com/luigi311/encoders-docker/${{ matrix.name}}:static-latest
       
       - name: Build Push
         id: build_push
