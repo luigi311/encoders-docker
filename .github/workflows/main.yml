@@ -124,7 +124,7 @@ jobs:
             echo "Main"
             LATEST-VAR="latest"
           else
-            if [ "${REF/refs\/tags\//}" != "" ]; then
+            if [ "${REF}" == "refs/tags/*" ]; then
               echo "Tag"
               LATEST-VAR="${REF/refs\/tags\//}-latest"
             else
