@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [aomenc]
+        name: [aomenc, rav1e, svt-av1, svt-hevc, vpxenc, x264, x265]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
