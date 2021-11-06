@@ -10,6 +10,7 @@ on:
       - "*.md"
 env:
   DOCKER_USERNAME: luigi311
+
 jobs:
   base:
     name: ${{ matrix.name }} ${{ matrix.enc }}
@@ -30,9 +31,6 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        env:
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-        if: "${{ env.DOCKER_TOKEN != '' }}"
         uses: docker/metadata-action@v3
         with:
           images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
@@ -49,7 +47,10 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Login to Docker
-        if: "${{ steps.docker_meta.outcome == 'success' }}"
+        id: login_docker
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        if: "${{ env.DOCKER_TOKEN != '' }}"
         uses: docker/login-action@v1
         with:
           registry: registry.gitlab.com
@@ -62,7 +63,12 @@ jobs:
             -f Dockerfile.${{ matrix.name }} \
             -t ${{ steps.docker_meta.outputs.tags }} \
             "$PWD"
-
+      
+      - name: Push
+        if: "${{ steps.login_docker.outcome == 'success' }}"
+        run: |
+          docker push ${{ steps.docker_meta.outputs.tags }}
+      
       #- name: Build
       #  id: build
       #  if: "${{ steps.docker_meta.outcome == 'skipped' }}"
@@ -85,9 +91,9 @@ jobs:
       #    labels: ${{ steps.docker_meta.outputs.labels }}
 
       # Echo digest so users can validate their image
-      - name: Image digest
-        if: "${{ steps.docker_meta.outcome == 'success' }}"
-        run: echo "${{ steps.build_push.outputs.digest }}"
+      #- name: Image digest
+      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
+      #  run: echo "${{ steps.build_push.outputs.digest }}"
     
     
     
@@ -103,12 +109,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        
+      #- name: Slimdown
+      #  run: |
+      #    wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+      #    chmod +x free_disk_space.sh
+      #    ./free_disk_space.sh
 
       - name: Docker meta
         id: docker_meta
-        env:
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-        if: "${{ env.DOCKER_TOKEN != '' }}"
         uses: docker/metadata-action@v3
         with:
           images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
@@ -124,8 +133,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Login to DockerHub
-        if: "${{ steps.docker_meta.outcome == 'success' }}"
+      - name: Login to Docker
+        id: login_docker
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        if: "${{ env.DOCKER_TOKEN != '' }}"
         uses: docker/login-action@v1
         with:
           registry: registry.gitlab.com
@@ -133,27 +145,39 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build
-        id: build
-        if: "${{ steps.docker_meta.outcome == 'skipped' }}"
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile.${{ matrix.name }}
-          push: false
-          tags: registry.gitlab.com/luigi311/encoders-docker/${{ matrix.name}}:static-latest
+        run: |
+          docker build --compress --pull \
+            -f Dockerfile.${{ matrix.name }} \
+            -t ${{ steps.docker_meta.outputs.tags }} \
+            "$PWD"
       
-      - name: Build Push
-        id: build_push
-        if: "${{ steps.docker_meta.outcome == 'success' }}"
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
+      - name: Push
+        if: "${{ steps.login_docker.outcome == 'success' }}"
+        run: |
+          docker push ${{ steps.docker_meta.outputs.tags }}
+      
+      #- name: Build
+      #  id: build
+      #  if: "${{ steps.docker_meta.outcome == 'skipped' }}"
+      #  uses: docker/build-push-action@v2
+      #  with:
+      #    context: .
+      #    file: ./Dockerfile.${{ matrix.name }}
+      #    push: false
+      #    tags: registry.gitlab.com/luigi311/encoders-docker/${{ matrix.name}}:static-latest
+      
+      #- name: Build Push
+      #  id: build_push
+      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
+      #  uses: docker/build-push-action@v2
+      #  with:
+      #    context: .
+      #    file: ./Dockerfile
+      #    push: false
+      #    tags: ${{ steps.docker_meta.outputs.tags }}
+      #    labels: ${{ steps.docker_meta.outputs.labels }}
 
       # Echo digest so users can validate their image
-      - name: Image digest
-        if: "${{ steps.docker_meta.outcome == 'success' }}"
-        run: echo "${{ steps.build_push.outputs.digest }}"
+      #- name: Image digest
+      #  if: "${{ steps.docker_meta.outcome == 'success' }}"
+      #  run: echo "${{ steps.build_push.outputs.digest }}"
