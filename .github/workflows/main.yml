@@ -121,15 +121,19 @@ jobs:
         run: |
           REF="${{ github.ref }}"
           if [ "${REF}" == "refs/heads/main" ]; then
-            LATEST="latest"
+            echo "Main"
+            LATEST-VAR="latest"
           else
             if [ "${REF/refs\/tags\//}" != "" ]; then
-              LATEST="${REF/refs\/tags\//}-latest"
+              echo "Tag"
+              LATEST-VAR="${REF/refs\/tags\//}-latest"
             else
-              LATEST="${REF/refs\/heads\//}-latest"
+              echo "Other"
+              LATEST-VAR="${REF/refs\/heads\//}-latest"
             fi
           fi
-          echo ::set-output name=LATEST::${LATEST}
+          echo "${LATEST-VAR}"
+          echo ::set-output name=LATEST::${LATEST-VAR}
           
       - name: Docker meta
         id: docker_meta
