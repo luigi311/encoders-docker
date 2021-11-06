@@ -37,8 +37,8 @@ jobs:
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
-            type=ref,event=branch,suffix={{date 'YYYYMMDD'}}
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=ref,event=branch,suffix=-{{date 'YYYYMMDD'}}
+            type=schedule,pattern=-{{date 'YYYYMMDD'}}
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -124,8 +124,8 @@ jobs:
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
           tags: |
-            type=ref,event=branch,suffix={{date 'YYYYMMDD'}}
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=ref,event=branch,suffix=-{{date 'YYYYMMDD'}}
+            type=schedule,pattern=-{{date 'YYYYMMDD'}}
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
