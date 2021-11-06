@@ -22,11 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         
-      - name: Slimdown
-        run: |
-          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
-          chmod +x free_disk_space.sh
-          ./free_disk_space.sh
+      #- name: Slimdown
+      #  run: |
+      #    wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+      #    chmod +x free_disk_space.sh
+      #    ./free_disk_space.sh
 
       - name: Docker meta
         id: docker_meta
