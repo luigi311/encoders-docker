@@ -112,19 +112,15 @@ jobs:
           for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
           tar xf video.tar.gz --directory videos
           if [ "${{ matrix.name }}" == "svt-hevc" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
-            # Volume mounting due to no support for stdin and std out
             docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }}
           else
-            # Encode via stdin and stdout
             docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }} < videos/akiyo_cif.y4m > "${{ matrix.output_file }}"
           fi
-          # Compile dav1d for av1 encodes
           if [ "${{ matrix.name }}" == "aomenc" ] || [ "${{ matrix.name }}" == "svt-av1" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
             git clone https://github.com/videolan/dav1d.git
             mkdir -p dav1d/build && cd dav1d/build
             meson .. && ninja
             cd ../..
-
             dav1d/build/tools/dav1d -i "${{ matrix.output_file }}" -o videos/test.yuv
           else
             ffmpeg -hide_banner -loglevel error -i "${{ matrix.output_file }}" -f null -
@@ -141,9 +137,6 @@ jobs:
     name: ffmpeg
     runs-on: self-hosted
     needs: base
-    env:
-      test_command: "$test_command_ffmpeg"
-      output_file: "$output_file_ffmpeg"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -226,9 +219,8 @@ jobs:
           mkdir -p videos
           for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
           tar xf video.tar.gz --directory videos
-          # Encode via stdin and stdout
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ env.test_command }} < videos/akiyo_cif.y4m > "${{ env.output_file }}"
-          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file }}" -f null -
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ env.test_command_ffmpeg }} < videos/akiyo_cif.y4m > "${{ env.output_file_ffmpeg }}"
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_ffmpeg }}" -f null -
       
       - name: Push
         if: "${{ steps.login_docker.outcome == 'success' }}"
