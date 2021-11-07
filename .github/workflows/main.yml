@@ -36,26 +36,26 @@ jobs:
       matrix:
         include:
          - name: aomenc
-           test_command: ${{ env.test_command_aomenc }}
-           output_file: ${{ env.output_file_aomenc }}
+           test_command: "--rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
+           output_file: "videos/akiyo_cif.ivf"
          - name: rav1e
-           test_command: ${{ env.test_command_rav1e }}
-           output_file: ${{ env.output_file_rav1e }}
+           test_command: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
+           output_file: "videos/akiyo_cif.ivf"
          - name: svt-av1
-           test_command: ${{ env.test_command_svt-av1 }}
-           output_file: ${{ env.output_file_svt-av1 }}
+           test_command: "--preset 8 -i /dev/stdin -b /dev/stdout"
+           output_file: "videos/akiyo_cif.ivf"
          - name: svt-hevc
-           test_command: ${{ env.test_command_svt-hevc }}
-           output_file: ${{ env.output_file_svt-hevc }}
+           test_command: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
+           output_file: "videos/akiyo_cif.bin"
          - name: x265
-           test_command: ${{ env.test_command_x265 }}
-           output_file: ${{ env.output_file_x265 }}
+           test_command: "--y4m --preset 0 /dev/stdin -o /dev/stdout"
+           output_file: "videos/akiyo_cif.h265"
          - name: vpxenc
-           test_command: ${{ env.test_command_vpxenc }}
-           output_file: ${{ env.output_file_vpxenc }}
+           test_command: "--codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
+           output_file: "videos/akiyo_cif.ivf"
          - name: x264
-           test_command: ${{ env.test_command_x264 }}
-           output_file: ${{ env.output_file_x264 }}
+           test_command: "--demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
+           output_file: "videos/akiyo_cif.mkv"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
