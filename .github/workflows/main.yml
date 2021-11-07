@@ -10,7 +10,7 @@ on:
       - "*.md"
 env:
   DOCKER_USERNAME: luigi311
-  deps: ffmpeg
+  deps: ffmpeg ninja-build nasm 
   test_command_aomenc: "--rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
   output_file_aomenc: "videos/akiyo_cif.ivf"
   test_command_rav1e: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
@@ -27,10 +27,11 @@ env:
   output_file_x264: "videos/akiyo_cif.mkv"
   test_command_ffmpeg: "-i /videos/akiyo_cif.y4m /videos/test.mp4"
   output_file_ffmpeg: "videos/test.mp4"
+
 jobs:
   base:
     name: ${{ matrix.name }}
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -60,16 +61,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         
-      #- name: Slimdown
-      #  run: |
-      #    wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
-      #    chmod +x free_disk_space.sh
-      #    ./free_disk_space.sh
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
 
-      #- name: Install deps
-      #  run: |
-      #    apt-get update
-      #    apt-get install -y ${{ env.deps }}
+      - name: Install deps
+        run: |
+          apt-get update
+          apt-get install -y ${{ env.deps }}
 
       - name: Docker meta
         id: docker_meta
@@ -135,22 +136,22 @@ jobs:
     
   ffmpeg:
     name: ffmpeg
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     needs: base
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         
-      #- name: Slimdown
-      #  run: |
-      #    wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
-      #    chmod +x free_disk_space.sh
-      #    ./free_disk_space.sh
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
       
-      #- name: Install deps
-      #  run: |
-      #    apt-get update
-      #    apt-get install -y ${{ env.deps }}
+      - name: Install deps
+        run: |
+          apt-get update
+          apt-get install -y ${{ env.deps }}
       
       - name: Create latest
         id: create_latest
@@ -229,22 +230,22 @@ jobs:
       
   tools:
     name: tools
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     needs: ffmpeg
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         
-      #- name: Slimdown
-      #  run: |
-      #    wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
-      #    chmod +x free_disk_space.sh
-      #    ./free_disk_space.sh
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
       
-      #- name: Install deps
-      #  run: |
-      #    apt-get update
-      #    apt-get install -y ${{ env.deps }}
+      - name: Install deps
+        run: |
+          apt-get update
+          apt-get install -y ${{ env.deps }}
       
       - name: Create latest
         id: create_latest
@@ -318,22 +319,22 @@ jobs:
           
   deploy:
     name: deploy
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     needs: tools
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         
-      #- name: Slimdown
-      #  run: |
-      #    wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
-      #    chmod +x free_disk_space.sh
-      #    ./free_disk_space.sh
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
       
       - name: Install deps
         run: |
-          #apt-get update
-          #apt-get install -y ${{ env.deps }}
+          apt-get update
+          apt-get install -y ${{ env.deps }}
           git clone https://github.com/videolan/dav1d.git
           mkdir -p dav1d/build && cd dav1d/build
           meson .. && ninja
