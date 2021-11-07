@@ -71,6 +71,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ env.deps }}
+          pip3 install meson
 
       - name: Docker meta
         id: docker_meta
@@ -335,6 +336,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ env.deps }}
+          pip3 install meson
           git clone https://github.com/videolan/dav1d.git
           mkdir -p dav1d/build && cd dav1d/build
           meson .. && ninja
