@@ -1,0 +1,460 @@
+name: CI
+on:
+  push:
+    paths-ignore:
+      - .gitignore
+      - "*.md"
+  pull_request:
+    paths-ignore:
+      - .gitignore
+      - "*.md"
+env:
+  DOCKER_USERNAME: luigi311
+  deps: ffmpeg ninja-build nasm 
+  test_command_aomenc: "--rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
+  output_file_aomenc: "videos/akiyo_cif.ivf"
+  test_command_rav1e: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
+  output_file_rav1e: "videos/akiyo_cif.ivf"
+  test_command_svt_av1:  "--preset 8 -i /dev/stdin -b /dev/stdout"
+  output_file_svt_av1: "videos/akiyo_cif.ivf"
+  test_command_svt_hevc: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
+  output_file_svt_hevc: "videos/akiyo_cif.bin"
+  test_command_x265: "--y4m --preset 0 /dev/stdin -o /dev/stdout"
+  output_file_x265: "videos/akiyo_cif.h265"
+  test_command_vpxenc: "--codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
+  output_file_vpxenc: "videos/akiyo_cif.ivf"
+  test_command_x264: "--demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
+  output_file_x264: "videos/akiyo_cif.mkv"
+  test_command_ffmpeg: "-i /videos/akiyo_cif.y4m /videos/test.mp4"
+  output_file_ffmpeg: "videos/test.mp4"
+
+jobs:
+  base:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+         - name: aomenc
+           test_command: "$test_command_aomenc"
+           output_file: "$output_file_aomenc"
+         - name: rav1e
+           test_command: "$test_command_rav1e"
+           output_file: "$output_file_rav1e"
+         - name: svt-av1
+           test_command: "$test_command_svt_av1"
+           output_file: "$output_file_svt_av1"
+         - name: svt-hevc
+           test_command: "$test_command_svt_hevc"
+           output_file: "$output_file_svt_hevc"
+         - name: x265
+           test_command: "$test_command_x265"
+           output_file: "$output_file_x265"
+         - name: vpxenc
+           test_command: "$test_command_vpxenc"
+           output_file: "$output_file_vpxenc"
+         - name: x264
+           test_command: "$test_command_x264"
+           output_file: "$output_file_x264"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.deps }}
+          pip3 install meson
+
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3
+        with:
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/${{ matrix.name}}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            type=ref,event=branch,suffix=-latest
+            type=schedule,pattern=-{{date 'YYYYMMDD'}}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Docker
+        id: login_docker
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        if: "${{ env.DOCKER_TOKEN != '' }}"
+        uses: docker/login-action@v1
+        with:
+          registry: registry.gitlab.com
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build
+        run: |
+          docker build --compress --pull \
+            -f Dockerfile.${{ matrix.name }} \
+            -t ${{ steps.docker_meta.outputs.tags }} \
+            "$PWD"
+      
+      - name: Test
+        run: |
+          mkdir -p videos
+          for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+          tar xf video.tar.gz --directory videos
+          if [ "${{ matrix.name }}" == "svt-hevc" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
+            docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }}
+          else
+            docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }} < videos/akiyo_cif.y4m > "${{ matrix.output_file }}"
+          fi
+          if [ "${{ matrix.name }}" == "aomenc" ] || [ "${{ matrix.name }}" == "svt-av1" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
+            git clone https://github.com/videolan/dav1d.git
+            mkdir -p dav1d/build && cd dav1d/build
+            meson .. && ninja
+            cd ../..
+            dav1d/build/tools/dav1d -i "${{ matrix.output_file }}" -o videos/test.yuv
+          else
+            ffmpeg -hide_banner -loglevel error -i "${{ matrix.output_file }}" -f null -
+          fi
+      
+      - name: Push
+        if: "${{ steps.login_docker.outcome == 'success' }}"
+        run: |
+          docker push ${{ steps.docker_meta.outputs.tags }}
+    
+    
+    
+  ffmpeg:
+    name: ffmpeg
+    runs-on: ubuntu-20.04
+    needs: base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
+      
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.deps }}
+      
+      - name: Create latest
+        id: create_latest
+        run: |
+          REF="${{ github.ref }}"
+          if [ "${REF}" == "refs/heads/main" ]; then
+            echo "Main"
+            LATESTVAR="latest"
+          else
+            if [ "${REF}" == "refs/tags/*" ]; then
+              echo "Tag"
+              LATESTVAR="${REF/refs\/tags\//}-latest"
+            else
+              echo "Other"
+              LATESTVAR="${REF/refs\/heads\//}-latest"
+            fi
+          fi
+          echo "${LATESTVAR}"
+          echo ::set-output name=LATEST::${LATESTVAR}
+          
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3
+        with:
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/ffmpeg
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            type=ref,event=branch,suffix=-latest
+            type=schedule,pattern=-{{date 'YYYYMMDD'}}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Docker
+        id: login_docker
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        if: "${{ env.DOCKER_TOKEN != '' }}"
+        uses: docker/login-action@v1
+        with:
+          registry: registry.gitlab.com
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build
+        run: |
+          echo "${{ steps.create_latest.outputs.LATEST }}"
+          sed -i 's/aomenc:latest/aomenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/svt-av1:latest/svt-av1:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/rav1e:latest/rav1e:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/x265:latest/x265:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/svt-hevc:latest/svt-hevc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/x264:latest/x264:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          sed -i 's/vpxenc:latest/vpxenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.ffmpeg
+          docker build --compress --pull \
+            -f Dockerfile.ffmpeg \
+            -t ${{ steps.docker_meta.outputs.tags }} \
+            "$PWD"
+      
+      - name: Test
+        run: |
+          mkdir -p videos
+          for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+          tar xf video.tar.gz --directory videos
+          docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ${{ env.test_command_ffmpeg }}
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_ffmpeg }}" -f null -
+      
+      - name: Push
+        if: "${{ steps.login_docker.outcome == 'success' }}"
+        run: |
+          docker push ${{ steps.docker_meta.outputs.tags }}
+      
+  tools:
+    name: tools
+    runs-on: ubuntu-20.04
+    needs: ffmpeg
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
+      
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.deps }}
+      
+      - name: Create latest
+        id: create_latest
+        run: |
+          REF="${{ github.ref }}"
+          if [ "${REF}" == "refs/heads/main" ]; then
+            echo "Main"
+            LATESTVAR="latest"
+          else
+            if [ "${REF}" == "refs/tags/*" ]; then
+              echo "Tag"
+              LATESTVAR="${REF/refs\/tags\//}-latest"
+            else
+              echo "Other"
+              LATESTVAR="${REF/refs\/heads\//}-latest"
+            fi
+          fi
+          echo "${LATESTVAR}"
+          echo ::set-output name=LATEST::${LATESTVAR}
+          
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3
+        with:
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker/tools
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            type=ref,event=branch,suffix=-latest
+            type=schedule,pattern=-{{date 'YYYYMMDD'}}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Docker
+        id: login_docker
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        if: "${{ env.DOCKER_TOKEN != '' }}"
+        uses: docker/login-action@v1
+        with:
+          registry: registry.gitlab.com
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build
+        run: |
+          echo "${{ steps.create_latest.outputs.LATEST }}"
+          sed -i 's/aomenc:latest/aomenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/svt-av1:latest/svt-av1:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/rav1e:latest/rav1e:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/x265:latest/x265:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/svt-hevc:latest/svt-hevc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/x264:latest/x264:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/vpxenc:latest/vpxenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+          sed -i 's/ffmpeg:latest/ffmpeg:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile.tools
+
+          
+          docker build --compress --pull \
+            -f Dockerfile.tools \
+            -t ${{ steps.docker_meta.outputs.tags }} \
+            "$PWD"
+      
+      - name: Push
+        if: "${{ steps.login_docker.outcome == 'success' }}"
+        run: |
+          docker push ${{ steps.docker_meta.outputs.tags }} 
+          
+  deploy:
+    name: deploy
+    runs-on: ubuntu-20.04
+    needs: tools
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Slimdown
+        run: |
+          wget https://raw.githubusercontent.com/apache/flink/master/tools/azure-pipelines/free_disk_space.sh
+          chmod +x free_disk_space.sh
+          ./free_disk_space.sh
+      
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.deps }}
+          pip3 install meson
+          git clone https://github.com/videolan/dav1d.git
+          mkdir -p dav1d/build && cd dav1d/build
+          meson .. && ninja
+          cd ../..
+    
+      - name: Create latest
+        id: create_latest
+        run: |
+          REF="${{ github.ref }}"
+          if [ "${REF}" == "refs/heads/main" ]; then
+            echo "Main"
+            LATESTVAR="latest"
+          else
+            if [ "${REF}" == "refs/tags/*" ]; then
+              echo "Tag"
+              LATESTVAR="${REF/refs\/tags\//}-latest"
+            else
+              echo "Other"
+              LATESTVAR="${REF/refs\/heads\//}-latest"
+            fi
+          fi
+          echo "${LATESTVAR}"
+          echo ::set-output name=LATEST::${LATESTVAR}
+          
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3
+        with:
+          images: registry.gitlab.com/${{ env.DOCKER_USERNAME }}/encoders-docker
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            type=ref,event=branch,suffix=-latest
+            type=schedule,pattern=-{{date 'YYYYMMDD'}}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Docker
+        id: login_docker
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        if: "${{ env.DOCKER_TOKEN != '' }}"
+        uses: docker/login-action@v1
+        with:
+          registry: registry.gitlab.com
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build
+        run: |
+          echo "${{ steps.create_latest.outputs.LATEST }}"
+          sed -i 's/aomenc:latest/aomenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/svt-av1:latest/svt-av1:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/rav1e:latest/rav1e:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/x265:latest/x265:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/svt-hevc:latest/svt-hevc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/x264:latest/x264:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/vpxenc:latest/vpxenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/ffmpeg:latest/ffmpeg:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/tools:latest/tools:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+
+          
+          docker build --compress --pull \
+            -f Dockerfile \
+            -t ${{ steps.docker_meta.outputs.tags }} \
+            "$PWD"
+      
+      - name: Test
+        run: |
+          mkdir -p videos
+          for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
+          tar xf video.tar.gz --directory videos
+          
+          # Test aomenc
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" aomenc ${{ env.test_command_aomenc }} < videos/akiyo_cif.y4m > "${{ env.output_file_aomenc }}"
+          dav1d/build/tools/dav1d -i "${{ env.output_file_aomenc }}" -o videos/test.yuv
+          rm -f "${{ env.output_file_aomenc }}" videos/test.yuv
+          
+          # Test svt-av1
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtAv1EncApp ${{ env.test_command_svt_av1 }} < videos/akiyo_cif.y4m > "${{ env.output_file_svt_av1 }}"
+          dav1d/build/tools/dav1d -i "${{ env.output_file_svt_av1 }}" -o videos/test.yuv
+          rm -f "${{ env.output_file_svt_av1 }}" videos/test.yuv
+
+          # Test rav1e
+          docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" rav1e ${{ env.test_command_rav1e }}
+          dav1d/build/tools/dav1d -i "${{ env.output_file_rav1e }}" -o videos/test.yuv
+          rm -f "${{ env.output_file_rav1e }}" videos/test.yuv
+
+          # Test x265
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" x265 ${{ env.test_command_x265 }} < videos/akiyo_cif.y4m > "${{ env.output_file_x265 }}"
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_x265 }}" -f null -
+          rm -f "${{ env.output_file_x265 }}"
+          
+          # Test svt-hevc
+          docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" SvtHevcEncApp ${{ env.test_command_svt_hevc }}
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_svt_hevc }}" -f null -
+          rm -f "${{ env.output_file_svt_hevc }}"
+          
+          # Test vpxenc
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" vpxenc ${{ env.test_command_vpxenc }} < videos/akiyo_cif.y4m > "${{ env.output_file_vpxenc }}"
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_vpxenc }}" -f null -
+          rm -f "${{ env.output_file_vpxenc }}"
+          
+          # Test x264
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" x264 ${{ env.test_command_x264 }} < videos/akiyo_cif.y4m > "${{ env.output_file_x264 }}"
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_x264 }}" -f null -
+          rm -f "${{ env.output_file_x264 }}"
+
+          # Test ffmpeg
+          docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ffmpeg ${{ env.test_command_ffmpeg }}
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_ffmpeg }}" -f null -
+          rm -f "${{ env.output_file_ffmpeg }}"
+      
+      - name: Push
+        if: "${{ steps.login_docker.outcome == 'success' }}"
+        run: |
+          docker push ${{ steps.docker_meta.outputs.tags }} 
