@@ -66,10 +66,10 @@ jobs:
       #    chmod +x free_disk_space.sh
       #    ./free_disk_space.sh
 
-      - name: Install deps
-        run: |
-          apt-get update
-          apt-get install -y ${{ env.deps }}
+      #- name: Install deps
+      #  run: |
+      #    apt-get update
+      #    apt-get install -y ${{ env.deps }}
 
       - name: Docker meta
         id: docker_meta
@@ -127,8 +127,6 @@ jobs:
 
             dav1d/build/tools/dav1d -i "${{ matrix.output_file }}" -o videos/test.yuv
           else
-            apt-get update
-            apt-get install -y ffmpeg
             ffmpeg -hide_banner -loglevel error -i "${{ matrix.output_file }}" -f null -
           fi
       
@@ -156,10 +154,10 @@ jobs:
       #    chmod +x free_disk_space.sh
       #    ./free_disk_space.sh
       
-      - name: Install deps
-        run: |
-          apt-get update
-          apt-get install -y ${{ env.deps }}
+      #- name: Install deps
+      #  run: |
+      #    apt-get update
+      #    apt-get install -y ${{ env.deps }}
       
       - name: Create latest
         id: create_latest
@@ -251,10 +249,10 @@ jobs:
       #    chmod +x free_disk_space.sh
       #    ./free_disk_space.sh
       
-      - name: Install deps
-        run: |
-          apt-get update
-          apt-get install -y ${{ env.deps }}
+      #- name: Install deps
+      #  run: |
+      #    apt-get update
+      #    apt-get install -y ${{ env.deps }}
       
       - name: Create latest
         id: create_latest
@@ -342,8 +340,8 @@ jobs:
       
       - name: Install deps
         run: |
-          apt-get update
-          apt-get install -y ${{ env.deps }}
+          #apt-get update
+          #apt-get install -y ${{ env.deps }}
           git clone https://github.com/videolan/dav1d.git
           mkdir -p dav1d/build && cd dav1d/build
           meson .. && ninja
