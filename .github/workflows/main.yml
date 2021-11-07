@@ -155,7 +155,7 @@ jobs:
   tools:
     name: tools
     runs-on: self-hosted
-    needs: base
+    needs: ffmpeg
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -239,7 +239,7 @@ jobs:
   deploy:
     name: deploy
     runs-on: self-hosted
-    needs: base
+    needs: tools
     steps:
       - name: Checkout
         uses: actions/checkout@v2
