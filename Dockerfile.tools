@@ -109,13 +109,11 @@ RUN meson "../AviSynth" --default-library static && \
     cp lsmash-avisynth_*.deb /lsmash-avisynth.deb
 
 # Install libvmaf
-COPY --from=aomenc /vmaf.deb /
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /vmaf.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /vmaf.deb /
 RUN dpkg -i /vmaf.deb
 
 # Install aomenc
-COPY --from=aomenc /aomenc.deb /
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /aomenc.deb /
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /aomenc.deb /
 RUN dpkg -i /aomenc.deb
 
 # Install svt-av1
