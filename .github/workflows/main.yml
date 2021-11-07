@@ -144,8 +144,8 @@ jobs:
     runs-on: self-hosted
     needs: base
     env:
-      test_command: "${{ test_command_ffmpeg }}"
-      output_file: "${{ output_file_ffmpeg }}"
+      test_command: "$test_command_ffmpeg"
+      output_file: "$output_file_ffmpeg"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
