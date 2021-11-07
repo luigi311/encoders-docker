@@ -36,8 +36,8 @@ jobs:
       matrix:
         include:
          - name: aomenc
-           test_command: "--rt --cpu-used=9 --ivf /dev/stdin -o /dev/stdout"
-           output_file: "videos/akiyo_cif.ivf"
+           test_command: "$test_command_aomenc"
+           output_file: "$output_file_aomenc"
          - name: rav1e
            test_command: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
            output_file: "videos/akiyo_cif.ivf"
