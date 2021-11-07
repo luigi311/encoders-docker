@@ -69,7 +69,7 @@ jobs:
 
       - name: Install deps
         run: |
-          apt-get update
+          sudo apt-get update
           sudo apt-get install -y ${{ env.deps }}
 
       - name: Docker meta
@@ -150,7 +150,7 @@ jobs:
       
       - name: Install deps
         run: |
-          apt-get update
+          sudo apt-get update
           sudo apt-get install -y ${{ env.deps }}
       
       - name: Create latest
@@ -244,7 +244,7 @@ jobs:
       
       - name: Install deps
         run: |
-          apt-get update
+          sudo apt-get update
           sudo apt-get install -y ${{ env.deps }}
       
       - name: Create latest
@@ -333,7 +333,7 @@ jobs:
       
       - name: Install deps
         run: |
-          apt-get update
+          sudo apt-get update
           sudo apt-get install -y ${{ env.deps }}
           git clone https://github.com/videolan/dav1d.git
           mkdir -p dav1d/build && cd dav1d/build
