@@ -39,23 +39,23 @@ jobs:
            test_command: "$test_command_aomenc"
            output_file: "$output_file_aomenc"
          - name: rav1e
-           test_command: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
-           output_file: "videos/akiyo_cif.ivf"
+           test_command: "$test_command_rav1e"
+           output_file: "$output_file_rav1e"
          - name: svt-av1
-           test_command: "--preset 8 -i /dev/stdin -b /dev/stdout"
-           output_file: "videos/akiyo_cif.ivf"
+           test_command: "$test_command_svt-av1"
+           output_file: "$output_file_svt-av1"
          - name: svt-hevc
-           test_command: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
-           output_file: "videos/akiyo_cif.bin"
+           test_command: "$test_command_svt-hevc"
+           output_file: "$output_file_svt-hevc"
          - name: x265
-           test_command: "--y4m --preset 0 /dev/stdin -o /dev/stdout"
-           output_file: "videos/akiyo_cif.h265"
+           test_command: "$test_command_x265"
+           output_file: "$output_file_x265"
          - name: vpxenc
-           test_command: "--codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
-           output_file: "videos/akiyo_cif.ivf"
+           test_command: "$test_command_vpxenc"
+           output_file: "$output_file_vpxenc"
          - name: x264
-           test_command: "--demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
-           output_file: "videos/akiyo_cif.mkv"
+           test_command: "$test_command_x264"
+           output_file: "$output_file_x264"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -227,7 +227,7 @@ jobs:
           for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
           tar xf video.tar.gz --directory videos
           # Encode via stdin and stdout
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" "${{ env.test_command }}" < videos/akiyo_cif.y4m > "${{ env.output_file }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ env.test_command }} < videos/akiyo_cif.y4m > "${{ env.output_file }}"
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file }}" -f null -
       
       - name: Push
@@ -420,31 +420,31 @@ jobs:
           tar xf video.tar.gz --directory videos
           
           # Test aomenc
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" aomenc "${{ env.test_command_aomenc }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" aomenc ${{ env.test_command_aomenc }}
           dav1d/build/tools/dav1d -i "${{ env.output_file_aomenc }}" -o videos/test.yuv
           
           # Test svt-av1
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtAv1EncApp "${{ env.test_command_svt-av1 }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtAv1EncApp ${{ env.test_command_svt-av1 }}
           dav1d/build/tools/dav1d -i "${{ env.output_file_svt-av1 }}" -o videos/test.yuv
           
           # Test rav1e
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" rav1e "${{ env.test_command_rav1e }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" rav1e ${{ env.test_command_rav1e }}
           dav1d/build/tools/dav1d -i "${{ env.output_file_rav1e }}" -o videos/test.yuv
 
           # Test x265
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" x265 "${{ env.test_command_x265 }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" x265 ${{ env.test_command_x265 }}
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_x265 }}" -f null -
           
           # Test svt-hevc
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtHevcEncApp "${{ env.test_command_svt-hevc }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtHevcEncApp ${{ env.test_command_svt-hevc }}
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_svt-hevc }}" -f null -
           
           # Test vpxenc
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" vpxenc "${{ env.test_command_vpxenc }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" vpxenc ${{ env.test_command_vpxenc }}
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_vpxenc }}" -f null -
           
           # Test x264
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" x264 "${{ env.test_command_x264 }}"
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" x264 ${{ env.test_command_x264 }}
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_x264 }}" -f null -
 
       
