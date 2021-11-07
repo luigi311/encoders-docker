@@ -113,10 +113,10 @@ jobs:
           tar xf video.tar.gz --directory videos
           if [ "${{ matrix.name }}" == "svt-hevc" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
             # Volume mounting due to no support for stdin and std out
-            docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" "${{ matrix.test_command }}"
+            docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }}
           else
             # Encode via stdin and stdout
-            docker run -i "${{ steps.docker_meta.outputs.tags }}" "${{ matrix.test_command }}" < videos/akiyo_cif.y4m > "${{ matrix.output_file }}"
+            docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }} < videos/akiyo_cif.y4m > "${{ matrix.output_file }}"
           fi
           # Compile dav1d for av1 encodes
           if [ "${{ matrix.name }}" == "aomenc" ] || [ "${{ matrix.name }}" == "svt-av1" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
