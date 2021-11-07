@@ -83,6 +83,10 @@ RUN dpkg -i /x264.deb
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
 RUN dpkg -i /vpxenc.deb
 
+# Install rav1e
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e-static/usr /usr
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /usr/local/bin/rav1e /usr/local/bin/rav1e
+
 # Install ffmpeg
 COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg.deb /
 RUN dpkg -i /ffmpeg.deb
