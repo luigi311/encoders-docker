@@ -308,6 +308,7 @@ jobs:
           sed -i 's/x264:latest/x264:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
           sed -i 's/vpxenc:latest/vpxenc:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
           sed -i 's/ffmpeg:latest/ffmpeg:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
+          sed -i 's/tools:latest/tools:'"${{ steps.create_latest.outputs.LATEST }}"'/g' Dockerfile
 
           
           docker build --compress --pull \
