@@ -25,8 +25,8 @@ env:
   output_file_vpxenc: "videos/akiyo_cif.ivf"
   test_command_x264: "--demuxer y4m --muxer mkv --preset 0 /dev/stdin -o /dev/stdout"
   output_file_x264: "videos/akiyo_cif.mkv"
-  test_command_ffmpeg: " -i /videos/akiyo_cif.y4m /videos/test.mp4"
-  output_file_ffmpeg: "/videos/test.mp4"
+  test_command_ffmpeg: "-i /videos/akiyo_cif.y4m /videos/test.mp4"
+  output_file_ffmpeg: "videos/test.mp4"
 jobs:
   base:
     name: ${{ matrix.name }}
@@ -219,7 +219,7 @@ jobs:
           mkdir -p videos
           for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
           tar xf video.tar.gz --directory videos
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ env.test_command_ffmpeg }} < videos/akiyo_cif.y4m > "${{ env.output_file_ffmpeg }}"
+          docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ${{ env.test_command_ffmpeg }}
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_ffmpeg }}" -f null -
       
       - name: Push
