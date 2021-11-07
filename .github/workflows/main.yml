@@ -15,10 +15,10 @@ env:
   output_file_aomenc: "videos/akiyo_cif.ivf"
   test_command_rav1e: "--speed 10 --tiles 2 /videos/akiyo_cif.y4m -o /videos/akiyo_cif.ivf"
   output_file_rav1e: "videos/akiyo_cif.ivf"
-  test_command_svt-av1:  "--preset 8 -i /dev/stdin -b /dev/stdout"
-  output_file_svt-av1: "videos/akiyo_cif.ivf"
-  test_command_svt-hevc: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
-  output_file_svt-hevc: "videos/akiyo_cif.bin"
+  test_command_svt_av1:  "--preset 8 -i /dev/stdin -b /dev/stdout"
+  output_file_svt_av1: "videos/akiyo_cif.ivf"
+  test_command_svt_hevc: "-i /videos/akiyo_cif.y4m -b /videos/akiyo_cif.bin"
+  output_file_svt_hevc: "videos/akiyo_cif.bin"
   test_command_x265: "--y4m --preset 0 /dev/stdin -o /dev/stdout"
   output_file_x265: "videos/akiyo_cif.h265"
   test_command_vpxenc: "--codec=vp9 --ivf --cpu-used=0 --passes=1 /dev/stdin -o /dev/stdout"
@@ -41,12 +41,12 @@ jobs:
          - name: rav1e
            test_command: "$test_command_rav1e"
            output_file: "$output_file_rav1e"
-         - name: svt-av1
-           test_command: "$test_command_svt-av1"
-           output_file: "$output_file_svt-av1"
-         - name: svt-hevc
-           test_command: "$test_command_svt-hevc"
-           output_file: "$output_file_svt-hevc"
+         - name: svt_av1
+           test_command: "$test_command_svt_av1"
+           output_file: "$output_file_svt_av1"
+         - name: svt_hevc
+           test_command: "$test_command_svt_hevc"
+           output_file: "$output_file_svt_hevc"
          - name: x265
            test_command: "$test_command_x265"
            output_file: "$output_file_x265"
@@ -111,7 +111,7 @@ jobs:
           mkdir -p videos
           for url in raw.githubusercontent.com/OpenVisualCloud/SVT-AV1-Resources/master randomderp.com; do curl -LO https://$url/video.tar.gz && break; done 
           tar xf video.tar.gz --directory videos
-          if [ "${{ matrix.name }}" == "svt-hevc" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
+          if [ "${{ matrix.name }}" == "svt_hevc" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
             # Volume mounting due to no support for stdin and std out
             docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }}
           else
@@ -119,7 +119,7 @@ jobs:
             docker run -i "${{ steps.docker_meta.outputs.tags }}" ${{ matrix.test_command }} < videos/akiyo_cif.y4m > "${{ matrix.output_file }}"
           fi
           # Compile dav1d for av1 encodes
-          if [ "${{ matrix.name }}" == "aomenc" ] || [ "${{ matrix.name }}" == "svt-av1" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
+          if [ "${{ matrix.name }}" == "aomenc" ] || [ "${{ matrix.name }}" == "svt_av1" ] || [ "${{ matrix.name }}" == "rav1e" ]; then
             git clone https://github.com/videolan/dav1d.git
             mkdir -p dav1d/build && cd dav1d/build
             meson .. && ninja
@@ -424,8 +424,8 @@ jobs:
           dav1d/build/tools/dav1d -i "${{ env.output_file_aomenc }}" -o videos/test.yuv
           
           # Test svt-av1
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtAv1EncApp ${{ env.test_command_svt-av1 }}
-          dav1d/build/tools/dav1d -i "${{ env.output_file_svt-av1 }}" -o videos/test.yuv
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtAv1EncApp ${{ env.test_command_svt_av1 }}
+          dav1d/build/tools/dav1d -i "${{ env.output_file_svt_av1 }}" -o videos/test.yuv
           
           # Test rav1e
           docker run -i "${{ steps.docker_meta.outputs.tags }}" rav1e ${{ env.test_command_rav1e }}
@@ -436,8 +436,8 @@ jobs:
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_x265 }}" -f null -
           
           # Test svt-hevc
-          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtHevcEncApp ${{ env.test_command_svt-hevc }}
-          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_svt-hevc }}" -f null -
+          docker run -i "${{ steps.docker_meta.outputs.tags }}" SvtHevcEncApp ${{ env.test_command_svt_hevc }}
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_svt_hevc }}" -f null -
           
           # Test vpxenc
           docker run -i "${{ steps.docker_meta.outputs.tags }}" vpxenc ${{ env.test_command_vpxenc }}
