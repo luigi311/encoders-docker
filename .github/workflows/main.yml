@@ -439,6 +439,9 @@ jobs:
           docker run -i "${{ steps.docker_meta.outputs.tags }}" x264 ${{ env.test_command_x264 }}
           ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_x264 }}" -f null -
 
+          # Test ffmpeg
+          docker run -v $(pwd)/videos:/videos "${{ steps.docker_meta.outputs.tags }}" ffmpeg ${{ env.test_command_ffmpeg }}
+          ffmpeg -hide_banner -loglevel error -i "${{ env.output_file_ffmpeg }}" -f null -
       
       - name: Push
         if: "${{ steps.login_docker.outcome == 'success' }}"
