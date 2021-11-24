@@ -1,5 +1,10 @@
 FROM rust:latest
 
+ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -static"
+ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -static"
+ARG LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
+
 # Install Dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

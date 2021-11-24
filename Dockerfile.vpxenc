@@ -2,9 +2,9 @@ FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
 ARG DEBIAN_FRONTEND=noninteractive
-ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC"
+ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -static"
+ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -static"
+ARG LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install Dependencies
@@ -28,7 +28,7 @@ RUN apt-get update && \
 RUN git clone https://chromium.googlesource.com/webm/libvpx.git /vpxenc && \
     mkdir /build
 WORKDIR /build
-RUN ../vpxenc/configure --enable-vp9-highbitdepth --as=yasm && \
+RUN ../vpxenc/configure --enable-vp9-highbitdepth --as=yasm --disable-shared --disable-unit-tests --disable-docs && \
     make -j$(nproc) && \
     checkinstall --install=yes --default -D --pkgname "vpxenc" --pkgversion "1" make install && \
     cp vpxenc_*.deb /vpxenc.deb

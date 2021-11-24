@@ -2,9 +2,9 @@ FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
 ARG DEBIAN_FRONTEND=noninteractive
-ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC"
+ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu"
+ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install Dependencies
@@ -36,12 +36,16 @@ RUN pip3 install --no-cache-dir meson
 RUN git clone --branch v1.5.3 https://github.com/Netflix/vmaf.git /vmaf
 WORKDIR /vmaf/libvmaf
 COPY ./patches/vmaf-1.5.3-static.patch /vmaf/libvmaf/vmaf-1.5.3-static.patch
-RUN git apply vmaf-1.5.3-static.patch && \
+RUN git apply /vmaf/libvmaf/vmaf-1.5.3-static.patch --verbose && \
     meson build --default-library static --buildtype release && \
     ninja -vC build && \
     ninja -vC build test && \
     checkinstall --install=yes --default -D --pkgname "vmaf" ninja -vC build install && \
     cp vmaf_*.deb /vmaf.deb
+
+ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -static"
+ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -static"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
 
 # Install aomenc
 RUN git clone https://aomedia.googlesource.com/aom /aom && \

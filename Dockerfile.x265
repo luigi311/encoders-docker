@@ -2,9 +2,9 @@ FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
 ARG DEBIAN_FRONTEND=noninteractive
-ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC -Wl,--no-as-needed"
+ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include -static"
+ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include -static"
+ENV LDFLAGS="-Wl,--no-as-needed -Wl,-Bsymbolic -fPIC -ldl -L/usr/lib/x86_64-linux-gnu -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib -L/usr/lib64 -static"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install Dependencies
@@ -17,21 +17,33 @@ RUN apt-get update && \
         python3-setuptools \
         python3-wheel \
         build-essential \
+        ninja-build \
         cmake \
         libx265-dev \
         libnuma-dev \
-        mercurial \
         nasm \
         checkinstall && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install static x265 files
+RUN git clone --branch stable https://bitbucket.org/multicoreware/x265_git.git /x265
+#WORKDIR /x265/build/linux
+#RUN sed -i "s/-DLINKED_12BIT=ON/-DLINKED_12BIT=ON -DENABLE_SHARED=OFF -DENABLE_CLI=OFF/g" multilib.sh && \
+#    ./multilib.sh
+#
+#WORKDIR /x265/build/linux/8bit
+#RUN checkinstall --install=yes --default -D --pkgname "x265-library" make install && \
+#    cp x265-library_*.deb /x265-library.deb
+
+ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
+ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
+ENV LDFLAGS="-Wl,--no-as-needed -Wl,-Bsymbolic -fPIC -ldl -L/usr/lib/x86_64-linux-gnu -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib -L/usr/lib64"
+
 # Install x265
-RUN git clone https://github.com/videolan/x265.git /x265
 WORKDIR /x265/build/linux
-RUN chmod +x multilib.sh && \
-    sed -i "s/-DLINKED_12BIT=ON/-DLINKED_12BIT=ON -DENABLE_SHARED=OFF/g" multilib.sh && \
-    MAKEFLAGS="-j$(nproc)" ./multilib.sh
+RUN sed -i "s/-DLINKED_12BIT=ON/-DLINKED_12BIT=ON -DENABLE_SHARED=OFF/g" multilib.sh && \
+    ./multilib.sh
 
 WORKDIR /x265/build/linux/8bit
 RUN checkinstall --install=yes --default -D --pkgname "x265" make install && \

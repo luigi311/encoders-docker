@@ -2,9 +2,9 @@ FROM ubuntu:20.04
 
 # Set to noninteractive to fix issue with tzdate
 ARG DEBIAN_FRONTEND=noninteractive
-ARG CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC"
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC"
+ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
+ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -static -L/usr/lib/x86_64-linux-gnu -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib -L/usr/lib64"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install Dependencies
@@ -57,58 +57,66 @@ RUN apt-get update && \
 RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
+COPY --from=aomenc /vmaf.deb /
 RUN dpkg -i /vmaf.deb
 
 # Install aomenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /
+COPY --from=aomenc /aomenc.deb /
 RUN dpkg -i /aomenc.deb
 
 # Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
+COPY --from=svt-av1 /svt-av1.deb /
 RUN dpkg -i /svt-av1.deb
 
 # Install rav1e
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e-static/usr /usr
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /usr/local/bin/rav1e /usr/local/bin/rav1e
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /rav1e-static/usr /usr
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /usr/local/bin/rav1e /usr/local/bin/rav1e
+COPY --from=rav1e /rav1e-static /
+COPY --from=rav1e /usr/local/bin/rav1e /usr/local/bin/rav1e
 
 # Install x265
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:static-latest /x265.deb /
+COPY --from=x265 /x265.deb /
 RUN dpkg -i /x265.deb
 
 # Install svt-hevc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /
+COPY --from=svt-hevc /svt-hevc.deb /
 RUN dpkg -i /svt-hevc.deb
 
 # Install x264
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /
+COPY --from=x264 /x264.deb /
 RUN dpkg -i /x264.deb
 
 # Install vpxenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
+#COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
+COPY --from=vpxenc /vpxenc.deb /
 RUN dpkg -i /vpxenc.deb
 
 # Clone ffmpeg
 RUN git clone --branch release/4.4 git://source.ffmpeg.org/ffmpeg /ffmpeg
 WORKDIR /ffmpeg
 
+ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
+ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -static -L/usr/lib/x86_64-linux-gnu -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib -L/usr/lib64"
+
 # Build ffmpeg
 RUN ./configure \
         --ld="g++" \
         --pkg-config-flags="--static" \
+        --disable-shared \
         --enable-static \
-        --extra-cflags="-I/usr/local/include -I/usr/lib/include" \
-        --extra-cxxflags="-I/usr/local/include -I/usr/lib/include" \
-        --extra-ldflags="-L/usr/local/lib -L/usr/local/lib64 -L/usr/lib -L/usr/lib64" \
-        --extra-libs=-pthread \
-        --extra-libs=-lm \
-        --extra-libs=-lpthread \
+        --extra-libs="-pthread -lm -lpthread" \
         --enable-gpl \
         --enable-version3 \
-        --cc=gcc \
         --enable-librav1e \
         --enable-libx264 \
-        --enable-libx265 \
+#        --enable-libx265 \
         --enable-libvpx \
         --enable-libaom \
         --enable-libvmaf
