@@ -57,52 +57,50 @@ RUN apt-get update && \
 RUN pip3 install --no-cache-dir meson
 
 # Install libvmaf
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /
-COPY --from=aomenc /vmaf.deb /
-RUN dpkg -i /vmaf.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /packages/
+#COPY --from=aomenc /vmaf.deb /packages/
+RUN dpkg -i /packages/vmaf.deb
 
 # Install aomenc
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /
-COPY --from=aomenc /aomenc.deb /
-RUN dpkg -i /aomenc.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /packages/
+#COPY --from=aomenc /aomenc.deb /packages/
+RUN dpkg -i /packages/aomenc.deb
 
 # Install svt-av1
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /
-COPY --from=svt-av1 /svt-av1.deb /
-RUN dpkg -i /svt-av1.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /packages/
+#COPY --from=svt-av1 /svt-av1.deb /packages/
+RUN dpkg -i /packages/svt-av1.deb
 
 # Install rav1e
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /rav1e-static/usr /usr
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /usr/local/bin/rav1e /usr/local/bin/rav1e
-COPY --from=rav1e /rav1e-static /
-COPY --from=rav1e /usr/local/bin/rav1e /usr/local/bin/rav1e
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /rav1e-static/usr /usr
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /usr/local/bin/rav1e /usr/local/bin/rav1e
+#COPY --from=rav1e /rav1e-static /
+#COPY --from=rav1e /usr/local/bin/rav1e /usr/local/bin/rav1e
 
 # Install x265
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:static-latest /x265.deb /
-COPY --from=x265 /x265.deb /
-RUN dpkg -i /x265.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:static-latest /x265.deb /packages/
+#COPY --from=x265 /x265.deb /packages/
+RUN dpkg -i /packages/x265.deb
 
 # Install svt-hevc
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /
-COPY --from=svt-hevc /svt-hevc.deb /
-RUN dpkg -i /svt-hevc.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /packages/
+#COPY --from=svt-hevc /svt-hevc.deb /packages/
+RUN dpkg -i /packages/svt-hevc.deb
 
 # Install x264
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /
-COPY --from=x264 /x264.deb /
-RUN dpkg -i /x264.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /packages/
+#COPY --from=x264 /x264.deb /packages/
+RUN dpkg -i /packages/x264.deb
 
 # Install vpxenc
-#COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /
-COPY --from=vpxenc /vpxenc.deb /
-RUN dpkg -i /vpxenc.deb
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /packages/
+#COPY --from=vpxenc /vpxenc.deb /packages/
+RUN dpkg -i /packages/vpxenc.deb
 
 # Clone ffmpeg
 RUN git clone --branch release/4.4 git://source.ffmpeg.org/ffmpeg /ffmpeg
 WORKDIR /ffmpeg
 
-ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
-ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu -I/usr/local/include -I/usr/lib/include"
 ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -static -L/usr/lib/x86_64-linux-gnu -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib -L/usr/lib64"
 
 # Build ffmpeg
