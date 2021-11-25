@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ENV CFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu"
 ENV CXXFLAGS="-fno-omit-frame-pointer -pthread -fgraphite-identity -floop-block -ldl -lpthread -g -fPIC -I/usr/include/x86_64-linux-gnu"
-ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/
 
 # Install dependencies
@@ -101,8 +101,6 @@ COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg.d
 #COPY --from=ffmpeg /ffmpeg.deb /packages/
 RUN dpkg -i /packages/ffmpeg.deb
 
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu"
-
 # Build avisynth
 RUN git clone https://github.com/AviSynth/AviSynthPlus.git /AviSynthPlus && mkdir -p /AviSynthPlus/avisynth-build
 WORKDIR /AviSynthPlus/avisynth-build
@@ -111,7 +109,7 @@ RUN cmake -S .. -DCMAKE_BUILD_TYPE:STRING='None' -DBUILD_SHARED_LIBS='OFF' && \
     checkinstall --install=yes --default -D --pkgname "avisynth" --pkgversion "1" make install && \
     cp avisynth_*.deb /avisynth.deb
 
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
 
 # Install vapoursynth dependencies
 RUN mkdir -p /vapoursynth/dependencies && git clone https://github.com/sekrit-twc/zimg -b master --depth=1 /vapoursynth/dependencies/zimg
@@ -152,7 +150,7 @@ RUN meson "../AviSynth" --default-library static && \
     checkinstall --install=yes --default -D --pkgname "lsmash-avisynth" --pkgversion "1" ninja install && \
     cp lsmash-avisynth_*.deb /lsmash-avisynth.deb
 
-ARG LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu"
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu"
 
 # Install ffms2
 RUN git clone https://github.com/FFMS/ffms2.git /ffms2 && mkdir -p /ffms2/src/config
@@ -162,3 +160,5 @@ RUN autoreconf -fiv && \
     make -j"$(nproc)" && \
     checkinstall --install=yes --default -D --pkgname "ffms2" make install && \
     cp ffms2_*.deb /ffms2.deb
+
+ENV LDFLAGS="-Wl,-Bsymbolic -fPIC -L/usr/lib/x86_64-linux-gnu -static"
