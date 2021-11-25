@@ -107,9 +107,9 @@ COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /ffms2.deb
 RUN dpkg -i /packages/ffms2.deb
 
 # Install Johnvansickle FFMPEG
-WORKDIR /
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
-    tar -xf ffmpeg-* && \
+COPY ffmpeg-release-amd64-static.tar.xz /packages/ffmpeg-release-amd64-static.tar.xz
+WORKDIR /packages
+RUN tar -xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
 # Reset workdir to root
