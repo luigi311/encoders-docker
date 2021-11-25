@@ -13,6 +13,7 @@ RUN apt-get update && \
         pkg-config \
         git \
         curl \
+        wget \
         python3 \
         python3-pip \
         python3-setuptools \
@@ -107,7 +108,7 @@ RUN dpkg -i /packages/ffms2.deb
 
 # Install Johnvansickle FFMPEG
 WORKDIR /
-RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
     tar -xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
