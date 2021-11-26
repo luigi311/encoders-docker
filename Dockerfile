@@ -22,87 +22,85 @@ RUN apt-get update && \
         openssl \
         xz-utils \
         vim \
-        nano && \
+        nano \
+        libx265-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain nightly
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install libx265-dev until x265 can be built statically
 
 # Install libvmaf
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /vmaf.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /vmaf.deb /packages/
 #COPY --from=aomenc /vmaf.deb /packages/
 RUN dpkg -i /packages/vmaf.deb
 
 # Install aomenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:latest /aomenc.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/aomenc:static-latest /aomenc.deb /packages/
 #COPY --from=aomenc /aomenc.deb /packages/
 RUN dpkg -i /packages/aomenc.deb
 
 # Install svt-av1
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:latest /svt-av1.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-av1:static-latest /svt-av1.deb /packages/
 #COPY --from=svt-av1 /svt-av1.deb /packages/
 RUN dpkg -i /packages/svt-av1.deb
 
 # Install rav1e
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /rav1e-static/usr /usr
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:latest /usr/local/bin/rav1e /usr/local/bin/rav1e
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /rav1e-static/usr /usr
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/rav1e:static-latest /usr/local/bin/rav1e /usr/local/bin/rav1e
 #COPY --from=rav1e /rav1e-static /
 #wCOPY --from=rav1e /usr/local/bin/rav1e /usr/local/bin/rav1e
 
 # Install x265
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:latest /x265.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x265:static-latest /x265.deb /packages/
 #COPY --from=x265 /x265.deb /packages/
 RUN dpkg -i /packages/x265.deb
 
 # Install svt-hevc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:latest /svt-hevc.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/svt-hevc:static-latest /svt-hevc.deb /packages/
 #COPY --from=svt-hevc /svt-hevc.deb /packages/
 RUN dpkg -i /packages/svt-hevc.deb
 
 # Install x264
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:latest /x264.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/x264:static-latest /x264.deb /packages/
 #COPY --from=x264 /x264.deb /packages/
 RUN dpkg -i /packages/x264.deb
 
 # Install vpxenc
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:latest /vpxenc.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/vpxenc:static-latest /vpxenc.deb /packages/
 #COPY --from=vpxenc /vpxenc.deb /packages/
 RUN dpkg -i /packages/vpxenc.deb
 
 # Install ffmpeg
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:latest /ffmpeg.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/ffmpeg:static-latest /ffmpeg.deb /packages/
 #COPY --from=ffmpeg /ffmpeg.deb /packages/
 RUN dpkg -i /packages/ffmpeg.deb
 
 # Install avisynth
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /avisynth.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:static-latest /avisynth.deb /packages/
 #COPY --from=tools /avisynth.deb /packages/
 RUN dpkg -i /packages/avisynth.deb
 
 # Install vapoursynth
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /vapoursynth.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:static-latest /vapoursynth.deb /packages/
 #COPY --from=tools /vapoursynth.deb /packages/
 RUN dpkg -i /packages/vapoursynth.deb
 
 # Install lsmash
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /lsmash.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:static-latest /lsmash.deb /packages/
 #COPY --from=tools /lsmash.deb /packages/
 RUN dpkg -i /packages/lsmash.deb
 
 # Install lsmash-vapoursynth
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /lsmash-vapoursynth.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:static-latest /lsmash-vapoursynth.deb /packages/
 #COPY --from=tools /lsmash-vapoursynth.deb /packages/
 RUN dpkg -i /packages/lsmash-vapoursynth.deb
 
 # Install lsmash-avisynth
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /lsmash-avisynth.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:static-latest /lsmash-avisynth.deb /packages/
 #COPY --from=tools /lsmash-avisynth.deb /packages/
 RUN dpkg -i /packages/lsmash-avisynth.deb
 
 # Install ffms2
-COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:latest /ffms2.deb /packages/
+COPY --from=registry.gitlab.com/luigi311/encoders-docker/tools:static-latest /ffms2.deb /packages/
 #COPY --from=tools /ffms2.deb /packages/
 RUN dpkg -i /packages/ffms2.deb
 
